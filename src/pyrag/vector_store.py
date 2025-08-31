@@ -6,7 +6,7 @@ import chromadb
 from chromadb.config import Settings
 import numpy as np
 
-from .config import settings
+from .config import get_config
 from .logging import get_logger
 
 logger = get_logger(__name__)
@@ -20,9 +20,12 @@ class VectorStore:
         self.logger = get_logger(__name__)
         self.logger.info("Initializing ChromaDB vector store")
         
+        # Get configuration
+        config = get_config()
+        
         # Initialize ChromaDB client
         self.client = chromadb.PersistentClient(
-            path=settings.vector_store.path,
+            path=config.vector_store.db_path,
             settings=Settings(
                 anonymized_telemetry=False,
                 allow_reset=True,

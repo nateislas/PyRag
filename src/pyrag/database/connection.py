@@ -7,17 +7,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from ..config import settings
+from ..config import get_config
 from ..models import Base
 
 
 def get_engine() -> Engine:
     """Get SQLAlchemy engine instance."""
+    config = get_config()
+    # For now, use a simple SQLite database
+    database_url = "sqlite:///./pyrag.db"
     return create_engine(
-        settings.database.url,
-        pool_size=settings.database.pool_size,
-        max_overflow=settings.database.max_overflow,
-        echo=settings.database.echo,
+        database_url,
         pool_pre_ping=True,
         pool_recycle=3600,
     )

@@ -5,6 +5,6 @@ __author__ = "PyRAG Contributors"
 __email__ = "contributors@pyrag.dev"
 
 from .core import PyRAG
-from .config import settings
+from .config import get_config, validate_config
 
-__all__ = ["PyRAG", "settings"]
+__all__ = ["PyRAG", "get_config", "validate_config"]

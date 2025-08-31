@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from .config import settings
+from .config import get_config
 from .logging import get_logger
 from .database import get_session
 from .models import Library, LibraryVersion, DocumentChunk

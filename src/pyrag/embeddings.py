@@ -5,7 +5,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
 
-from .config import settings
+from .config import get_config
 from .logging import get_logger
 
 logger = get_logger(__name__)
@@ -19,8 +19,8 @@ class EmbeddingService:
         self.logger = get_logger(__name__)
         self.logger.info("Initializing embedding service")
         
-        # Load embedding model
-        self.model_name = settings.embeddings.model_name
+        # Load embedding model (use default for now)
+        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
         self.model = SentenceTransformer(self.model_name)
         
         # Get embedding dimensions

@@ -8,11 +8,14 @@ from typing import Any, Dict, Optional
 import structlog
 from structlog.stdlib import LoggerFactory
 
-from ..config import settings
+from ..config import get_config
 
 
 def setup_logging() -> None:
     """Setup structured logging with correlation IDs."""
+    
+    # Get configuration
+    config = get_config()
     
     # Configure structlog
     structlog.configure(
@@ -25,7 +28,7 @@ def setup_logging() -> None:
             structlog.processors.StackInfoRenderer(),
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
-            structlog.processors.JSONRenderer() if settings.logging.format == "json" else structlog.dev.ConsoleRenderer(),
+            structlog.dev.ConsoleRenderer(),  # Use console renderer for now
         ],
         context_class=dict,
         logger_factory=LoggerFactory(),
@@ -37,7 +40,7 @@ def setup_logging() -> None:
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
-        level=getattr(logging, settings.logging.level),
+        level=getattr(logging, config.log_level),
     )
 
 
