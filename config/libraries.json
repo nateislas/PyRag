@@ -1,0 +1,71 @@
+{
+  "libraries": [
+    {
+      "name": "langchain",
+      "url": "https://python.langchain.com/api_reference/langchain/index.html",
+      "description": "Framework for developing applications with LLMs - THE MOST IMPORTANT FOR GENAI",
+      "category": "ai_ml",
+      "expected_complexity": "high",
+      "max_crawl_pages": 200,
+      "max_content_pages": 150,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Most comprehensive LLM framework - need full coverage of chains, agents, memory, tools, integrations"
+    },
+    {
+      "name": "pydantic",
+      "url": "https://docs.pydantic.dev/latest/",
+      "description": "Data validation using Python type annotations - ESSENTIAL FOR AI DATA PIPELINES",
+      "category": "data_validation",
+      "expected_complexity": "medium",
+      "max_crawl_pages": 100,
+      "max_content_pages": 80,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Core data validation - need all validation types, serialization, configuration, best practices"
+    },
+    {
+      "name": "fastapi",
+      "url": "https://fastapi.tiangolo.com/",
+      "description": "Modern, fast web framework for building APIs - PERFECT FOR AI API ENDPOINTS",
+      "category": "web_framework",
+      "expected_complexity": "high",
+      "max_crawl_pages": 150,
+      "max_content_pages": 120,
+      "priority": 1,
+      "enabled": true,
+      "notes": "API framework - need all endpoints, middleware, dependencies, security, deployment patterns"
+    },
+    {
+      "name": "openai",
+      "url": "https://platform.openai.com/docs/api-reference",
+      "description": "OpenAI API client - DIRECT INTEGRATION WITH GPT MODELS",
+      "category": "ai_ml",
+      "expected_complexity": "medium",
+      "max_crawl_pages": 80,
+      "max_content_pages": 60,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Direct GPT integration - need all models, endpoints, streaming, fine-tuning, best practices"
+    },
+    {
+      "name": "transformers",
+      "url": "https://huggingface.co/docs/transformers/",
+      "description": "Hugging Face Transformers - LOCAL LLM DEPLOYMENT AND FINE-TUNING",
+      "category": "ai_ml",
+      "expected_complexity": "high",
+      "max_crawl_pages": 180,
+      "max_content_pages": 140,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Local LLM deployment - need all models, tokenizers, pipelines, training, optimization"
+    }
+  ],
+  "metadata": {
+    "version": "1.0",
+    "description": "Top 5 GenAI libraries for comprehensive documentation ingestion",
+    "total_libraries": 5,
+    "categories": ["ai_ml", "data_validation", "web_framework"],
+    "notes": "These libraries provide comprehensive coverage for GenAI application development. High page limits ensure we capture all documentation, tutorials, and examples."
+  }
+}
