@@ -14,7 +14,7 @@ class LLMConfig:
     api_key: str
     base_url: str = "https://api.llama.com/compat/v1/"
     model: str = "Llama-3.3-70B-Instruct"
-    max_tokens: int = 1000
+    max_tokens: int = 4000
     temperature: float = 0.1
 
 @dataclass
@@ -45,7 +45,7 @@ def get_config() -> PyRAGConfig:
         api_key=os.getenv("LLAMA_API_KEY", ""),
         base_url=os.getenv("LLAMA_BASE_URL", "https://api.llama.com/compat/v1/"),
         model=os.getenv("LLAMA_MODEL", "Llama-3.3-70B-Instruct"),
-        max_tokens=int(os.getenv("LLAMA_MAX_TOKENS", "1000")),
+        max_tokens=int(os.getenv("LLAMA_MAX_TOKENS", "4000")),
         temperature=float(os.getenv("LLAMA_TEMPERATURE", "0.1"))
     )
     
