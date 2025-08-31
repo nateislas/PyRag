@@ -1,0 +1,35 @@
+---
+alwaysApply: true
+---
+# Problem-Solving Standards
+
+## STOP AND THINK FIRST
+- **ALWAYS start by understanding the existing codebase structure**
+- **Analyze how the new feature fits with existing patterns**
+- **Ask clarifying questions if requirements are unclear**
+- **Plan the approach before writing any code**
+
+## Core Principles
+- Solve the actual problem, don't create workarounds
+- Address root causes, not just symptoms
+- Choose the most straightforward solution that meets requirements
+- If a library or tool exists for the task, use it rather than reinventing
+
+## Before Writing Code
+1. **EXAMINE existing files and patterns**
+2. **Identify where the new code should live**
+3. **Check if similar functionality already exists**
+4. **Plan the minimal changes needed**
+5. **Start with the smallest working implementation**
+
+## Implementation Strategy
+- **Build incrementally - one small piece at a time**
+- **Test each piece before moving to the next**
+- **Don't implement everything at once**
+- **Ask for feedback before major changes**
+
+## Anti-patterns to Avoid
+- Don't write extensive code without validation
+- Don't ignore existing code patterns in favor of "better" approaches
+- Don't implement features that weren't requested
+- Don't refactor existing code unless specifically asked
