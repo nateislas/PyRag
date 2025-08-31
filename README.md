@@ -1,233 +1,203 @@
-# PyRAG: Python Documentation RAG System
+# PyRAG - Python Documentation RAG System
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+> **Intelligent Python Documentation Search & Retrieval via MCP Server**
 
-PyRAG is an open-source RAG (Retrieval-Augmented Generation) system specifically designed to keep AI coding assistants current with the latest Python library documentation. By providing real-time access to up-to-date API references, examples, and best practices through the Model Context Protocol (MCP), PyRAG solves the critical problem of AI assistants suggesting outdated or deprecated code patterns.
+PyRAG is a powerful Retrieval-Augmented Generation (RAG) system that provides intelligent access to Python library documentation through a Model Context Protocol (MCP) server. It enables AI assistants to search, retrieve, and understand Python documentation with high relevance and context awareness.
 
-## 🚀 Features
+## 🚀 **Features**
 
-- **Real-time Documentation Access**: Keep AI assistants current with the latest Python library documentation
-- **Semantic Search**: Advanced search capabilities across documentation with context awareness
-- **MCP Integration**: Seamless integration with coding assistants via Model Context Protocol
-- **Multi-format Support**: Handles Sphinx, MkDocs, GitHub, and other documentation formats
-- **Hierarchical Chunking**: Maintains context and relationships between documentation sections
-- **Legal Compliance**: Built-in compliance tracking and opt-out mechanisms
-- **Performance Optimized**: Sub-200ms query response times with intelligent caching
+### **Intelligent Documentation Search**
+- **Multi-Library Support**: Comprehensive documentation for top Python libraries
+- **Semantic Search**: Find relevant information even with natural language queries
+- **Context-Aware Results**: Results tailored to your specific use case and skill level
+- **Real-Time Updates**: Always access the latest documentation
 
-## 🏗️ Architecture
+### **Advanced RAG Capabilities**
+- **Two-Phase Ingestion**: Intelligent crawling and content extraction
+- **LLM-Guided Filtering**: Smart identification of relevant documentation
+- **Rich Metadata**: Detailed API information, examples, and relationships
+- **Hybrid Search**: Combines vector similarity with keyword matching
 
-PyRAG is built with a modern, scalable architecture:
+### **MCP Server Integration**
+- **Seamless AI Integration**: Works with any MCP-compatible AI assistant
+- **Rich Context**: Provides detailed, relevant documentation snippets
+- **Query Understanding**: Understands complex documentation requests
+- **Multi-Modal Results**: Returns code examples, explanations, and API references
 
-- **FastAPI**: High-performance web framework for the API layer
-- **PostgreSQL + pgvector**: Relational database with vector similarity search
-- **ChromaDB/Weaviate**: Vector database for semantic search
-- **Redis**: Caching and task queuing
-- **Celery**: Background task processing
-- **Docker**: Containerized development and deployment
+## 🎯 **Use Cases**
 
-## 📋 Requirements
+### **For Developers**
+- **Quick API Reference**: "How do I use requests.get() with authentication?"
+- **Code Examples**: "Show me examples of FastAPI dependency injection"
+- **Troubleshooting**: "What causes 'ModuleNotFoundError' in pandas?"
+- **Best Practices**: "What's the recommended way to handle async operations in aiohttp?"
 
+### **For AI Assistants**
+- **Accurate Code Generation**: Access to current, relevant documentation
+- **Context-Aware Responses**: Understand library-specific patterns and conventions
+- **Multi-Library Support**: Handle projects using multiple Python libraries
+- **Real-Time Information**: Always provide up-to-date documentation
+
+## 🛠️ **Setup & Installation**
+
+### **Prerequisites**
 - Python 3.11+
-- Docker and Docker Compose
-- 8GB+ RAM (16GB recommended for embedding generation)
-- 10GB+ free disk space
+- Git
+- Cursor IDE (recommended) or any MCP-compatible client
 
-## 🛠️ Quick Start
+### **Quick Start**
 
-### Development Setup
-
-1. **Clone the repository**
+1. **Clone the Repository**
    ```bash
-   git clone https://github.com/pyrag/pyrag.git
-   cd pyrag
+   git clone https://github.com/nateislas/PyRag.git
+   cd PyRag
    ```
 
-2. **Start the development environment**
+2. **Set Up Environment**
    ```bash
-   docker-compose up -d
+   # Create virtual environment
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   
+   # Install dependencies
+   pip install -e .
    ```
 
-3. **Install dependencies**
+3. **Configure API Keys**
    ```bash
-   pip install -e .[dev]
+   # Create .env file
+   cp .env.example .env
+   
+   # Add your API keys
+   echo "LLAMA_API_KEY=your_llama_api_key" >> .env
+   echo "FIRECRAWL_API_KEY=your_firecrawl_api_key" >> .env
    ```
 
-4. **Run tests**
+4. **Ingest Documentation** (Optional)
    ```bash
-   pytest
+   # Ingest top Python libraries
+   python scripts/automated_library_ingestion.py
    ```
 
-5. **Start the API server**
+5. **Start MCP Server**
    ```bash
-   uvicorn pyrag.api.main:app --reload
+   python -m pyrag.mcp.server
    ```
 
-The API will be available at `http://localhost:8000` with interactive documentation at `http://localhost:8000/docs`.
+### **Cursor IDE Integration**
 
-### Production Deployment
+1. **Install MCP Extension**
+   - Open Cursor IDE
+   - Go to Extensions → Search for "MCP"
+   - Install the MCP extension
 
-For production deployment, see the [Deployment Guide](docs/deployment.md).
+2. **Configure PyRAG Server**
+   ```json
+   // In Cursor settings.json
+   {
+     "mcp.servers": {
+       "pyrag": {
+         "command": "python",
+         "args": ["-m", "pyrag.mcp.server"],
+         "env": {
+           "PYTHONPATH": "/path/to/PyRag/src"
+         }
+       }
+     }
+   }
+   ```
 
-## 📚 Documentation
+3. **Test Integration**
+   - Open a Python file in Cursor
+   - Ask your AI assistant: "How do I use pandas.read_csv()?"
+   - The assistant will now have access to comprehensive pandas documentation
 
-- [Implementation Guide](docs/implementation_guide.md) - Comprehensive technical documentation
-- [Implementation Plan](docs/implementation_plan.md) - Strategic roadmap and execution plan
-- [API Reference](docs/api.md) - Complete API documentation
-- [MCP Integration](docs/mcp-integration.md) - Guide for integrating with coding assistants
+## 📚 **Supported Libraries**
 
-## 🔧 Configuration
+PyRAG currently provides comprehensive documentation for:
 
-PyRAG uses environment variables for configuration. Create a `.env` file in the project root:
+- **LangChain** - Framework for developing applications with LLMs
+- **FastAPI** - Modern web framework for building APIs
+- **Transformers** - State-of-the-art Natural Language Processing
+- **Pydantic** - Data validation using Python type annotations
+- **OpenAI** - OpenAI API client library
 
-```env
-# Environment
-ENVIRONMENT=development
+*More libraries are being added regularly. Check our [library configuration](config/libraries.json) for the complete list.*
 
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=pyrag
-DB_USER=pyrag
-DB_PASSWORD=pyrag
+## 🔍 **Usage Examples**
 
-# Vector Store
-VECTOR_STORE_TYPE=chroma
-CHROMA_HOST=localhost
-CHROMA_PORT=8000
-
-# API
-API_HOST=0.0.0.0
-API_PORT=8000
-DEBUG=true
-
-# Logging
-LOG_LEVEL=INFO
-LOG_FORMAT=json
+### **Basic Queries**
+```
+"How do I make HTTP requests with authentication?"
+"Show me examples of FastAPI dependency injection"
+"What's the difference between pandas merge and join?"
+"How do I handle async operations in aiohttp?"
 ```
 
-## 🧪 Testing
-
-Run the test suite:
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=pyrag
-
-# Run specific test categories
-pytest -m unit
-pytest -m integration
-pytest -m slow
+### **Advanced Queries**
+```
+"Compare the performance of different pandas data loading methods"
+"Show me best practices for error handling in FastAPI"
+"What are the common pitfalls when using LangChain agents?"
+"How do I optimize memory usage in large pandas operations?"
 ```
 
-## 🤝 Contributing
+### **Code-Specific Queries**
+```
+"Explain the parameters of requests.Session()"
+"What does the 'inplace' parameter do in pandas operations?"
+"How do I configure logging in FastAPI applications?"
+"What are the return types for Transformers pipeline outputs?"
+```
+
+## 🏗️ **Architecture**
+
+PyRAG uses a sophisticated two-phase ingestion system:
+
+1. **Discovery Phase**: LLM-guided crawling identifies relevant documentation pages
+2. **Extraction Phase**: High-quality content extraction with metadata preservation
+
+The system then provides intelligent search through:
+- **Vector Similarity**: Semantic understanding of queries
+- **Metadata Filtering**: Precise filtering by library, version, content type
+- **Hybrid Search**: Combines multiple search strategies for optimal results
+- **Context Awareness**: Considers user's current context and preferences
+
+## 🤝 **Contributing**
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Make your changes and add tests
-4. Run the test suite: `pytest`
-5. Format code: `black . && isort .`
-6. Commit your changes: `git commit -m 'Add amazing feature'`
-7. Push to the branch: `git push origin feature/amazing-feature`
-8. Open a Pull Request
-
-### Code Quality
-
-We use several tools to maintain code quality:
-
-- **Black**: Code formatting
-- **isort**: Import sorting
-- **flake8**: Linting
-- **mypy**: Type checking
-- **pytest**: Testing
-
-Run all quality checks:
-
+### **Development Setup**
 ```bash
-pre-commit run --all-files
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Run tests
+pytest
+
+# Run comprehensive system test
+python scripts/test_complete_system.py
 ```
 
-## 📊 Project Status
-
-This project is currently in **Phase 0: Foundation & Architecture**. See our [Implementation Plan](docs/implementation_plan.md) for detailed progress and roadmap.
-
-### Current Phase Goals
-
-- [x] Project structure and architecture setup
-- [x] Database schema design
-- [x] Configuration management
-- [x] Logging infrastructure
-- [x] Basic FastAPI application
-- [x] Docker development environment
-- [ ] Vector store integration
-- [ ] Document processing pipeline
-- [ ] MCP server implementation
-
-## 🏛️ Architecture Overview
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   MCP Client    │    │   FastAPI API   │    │   Background    │
-│   (Cursor)      │◄──►│   Server        │◄──►│   Workers       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                                ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   PostgreSQL    │    │   ChromaDB/     │    │   Redis         │
-│   + pgvector    │    │   Weaviate      │    │   Cache/Queue   │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 📈 Roadmap
-
-### Phase 1: Core RAG System (Weeks 2-4)
-- Document processing pipeline for 5 initial libraries
-- Hierarchical chunking system
-- Basic semantic search and retrieval
-- Vector store integration
-
-### Phase 2: MCP Integration (Weeks 5-6)
-- MCP server implementation
-- Cursor integration
-- Enhanced retrieval capabilities
-- Production deployment preparation
-
-### Phase 3: Scale & Advanced Features (Weeks 9-12)
-- Support for 25+ Python libraries
-- Automated update pipeline
-- Advanced retrieval with GraphRAG
-- Performance optimization
-
-### Phase 4: Community & Sustainability (Weeks 13-16)
-- Multi-platform integrations
-- Community-driven development
-- Enterprise features
-- Sustainable development model
-
-## 📄 License
+## 📄 **License**
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🙏 **Acknowledgments**
 
-- The Python community for creating amazing libraries
-- The MCP (Model Context Protocol) team for the integration standard
-- All contributors and supporters of this project
+- **Firecrawl** for high-quality web scraping capabilities
+- **ChromaDB** for efficient vector storage
+- **LangChain** for LLM integration patterns
+- **MCP Community** for the Model Context Protocol specification
 
-## 📞 Support
+## 📞 **Support**
 
-- **Issues**: [GitHub Issues](https://github.com/pyrag/pyrag/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/pyrag/pyrag/discussions)
-- **Documentation**: [Project Wiki](https://github.com/pyrag/pyrag/wiki)
+- **Issues**: [GitHub Issues](https://github.com/nateislas/PyRag/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/nateislas/PyRag/discussions)
+- **Documentation**: [Implementation Guide](docs/implementation_guide.md)
 
 ---
 
-**PyRAG** - Keeping AI coding assistants current with Python documentation.
+**Ready to supercharge your Python development with intelligent documentation search?** 🚀
+
+Get started with PyRAG today and experience the future of AI-assisted Python development!
