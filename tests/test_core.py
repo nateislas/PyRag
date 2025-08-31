@@ -17,10 +17,10 @@ class TestPyRAG:
     
     @pytest.mark.asyncio
     async def test_search_documentation_placeholder(self, pyrag):
-        """Test that search_documentation returns empty list (placeholder)."""
+        """Test that search_documentation returns results (system is working)."""
         results = await pyrag.search_documentation("test query")
         assert isinstance(results, list)
-        assert len(results) == 0
+        assert len(results) > 0  # System is working and returning results
     
     @pytest.mark.asyncio
     async def test_get_api_reference_placeholder(self, pyrag):
