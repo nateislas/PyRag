@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: pyrag-postgres
+    environment:
+      POSTGRES_DB: pyrag
+      POSTGRES_USER: pyrag
+      POSTGRES_PASSWORD: pyrag
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pyrag -d pyrag"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and task queuing
+  redis:
+    image: redis:7-alpine
+    container_name: pyrag-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ChromaDB for vector storage (development)
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: pyrag-chromadb
+    environment:
+      - CHROMA_SERVER_HOST=0.0.0.0
+      - CHROMA_SERVER_HTTP_PORT=8000
+      - CHROMA_SERVER_CORS_ALLOW_ORIGINS=["*"]
+    ports:
+      - "8001:8000"
+    volumes:
+      - chromadb_data:/chroma/chroma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PyRAG API service
+  pyrag-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: pyrag-api
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=pyrag
+      - DB_USER=pyrag
+      - DB_PASSWORD=pyrag
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=DEBUG
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/__pycache__
+      - /app/.pytest_cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    command: uvicorn pyrag.api.main:app --host 0.0.0.0 --port 8000 --reload
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Celery worker for background tasks
+  pyrag-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: pyrag-worker
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=pyrag
+      - DB_USER=pyrag
+      - DB_PASSWORD=pyrag
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - LOG_LEVEL=INFO
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    command: celery -A pyrag.tasks.celery_app worker --loglevel=info
+    profiles:
+      - worker
+
+  # Celery beat for scheduled tasks
+  pyrag-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: pyrag-beat
+    environment:
+      - ENVIRONMENT=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=pyrag
+      - DB_USER=pyrag
+      - DB_PASSWORD=pyrag
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - LOG_LEVEL=INFO
+    volumes:
+      - .:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    command: celery -A pyrag.tasks.celery_app beat --loglevel=info
+    profiles:
+      - worker
+
+volumes:
+  postgres_data:
+  redis_data:
+  chromadb_data:
