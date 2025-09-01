@@ -30,11 +30,22 @@ class VectorStoreConfig:
     collection_name: str = "documents"
 
 @dataclass
+class EmbeddingConfig:
+    """Embedding model configuration for Qodo model."""
+    model_name: str = "Qodo/Qodo-Embed-1-1.5B"  # Official model name
+    device: str = "auto"  # "auto", "cuda", "cpu"
+    max_length: int = 32768  # Qodo supports up to 32k tokens
+    batch_size: int = 8
+    normalize_embeddings: bool = True
+    # Note: Requires flash_attn>=2.5.6 for optimal performance
+
+@dataclass
 class PyRAGConfig:
     """Main PyRAG configuration."""
     llm: LLMConfig
     firecrawl: FirecrawlConfig
     vector_store: VectorStoreConfig
+    embedding: EmbeddingConfig
     log_level: str = "INFO"
 
 def get_config() -> PyRAGConfig:
@@ -61,10 +72,20 @@ def get_config() -> PyRAGConfig:
         collection_name=os.getenv("CHROMA_COLLECTION", "documents")
     )
     
+    # Embedding Configuration
+    embedding_config = EmbeddingConfig(
+        model_name=os.getenv("EMBEDDING_MODEL", "Qodo/Qodo-Embed-1-1.5B"),
+        device=os.getenv("EMBEDDING_DEVICE", "auto"),
+        max_length=int(os.getenv("EMBEDDING_MAX_LENGTH", "32768")),
+        batch_size=int(os.getenv("EMBEDDING_BATCH_SIZE", "8")),
+        normalize_embeddings=os.getenv("EMBEDDING_NORMALIZE", "true").lower() == "true"
+    )
+    
     return PyRAGConfig(
         llm=llm_config,
         firecrawl=firecrawl_config,
         vector_store=vector_store_config,
+        embedding=embedding_config,
         log_level=os.getenv("LOG_LEVEL", "INFO")
     )
 

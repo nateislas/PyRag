@@ -1,122 +1,232 @@
-"""Embedding service for PyRAG."""
+"""Embedding service for generating text embeddings using the Qodo model."""
 
-from typing import List, Optional
+import asyncio
+from typing import List, Union
 import numpy as np
 from sentence_transformers import SentenceTransformer
-import torch
-
-from .config import get_config
-from .logging import get_logger
+from pyrag.logging import get_logger
+from pyrag.config import get_config
 
 logger = get_logger(__name__)
 
 
 class EmbeddingService:
-    """Service for generating text embeddings."""
+    """Service for generating text embeddings using the Qodo model."""
     
-    def __init__(self):
-        """Initialize embedding service."""
-        self.logger = get_logger(__name__)
-        self.logger.info("Initializing embedding service")
+    def __init__(self, config=None):
+        """Initialize the embedding service with the Qodo model.
         
-        # Load embedding model (use default for now)
-        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
-        self.model = SentenceTransformer(self.model_name)
+        Args:
+            config: Optional configuration object, uses default if not provided
+        """
+        if config is None:
+            config = get_config()
         
-        # Get embedding dimensions
-        self.embedding_dim = self.model.get_sentence_embedding_dimension()
+        self.config = config.embedding
+        self.model_name = "Qodo/Qodo-Embed-1-1.5B"  # Use official model name
+        self.model = None
+        self.logger = logger
         
-        self.logger.info(f"Loaded embedding model: {self.model_name} (dim: {self.embedding_dim})")
+        # Initialize model
+        self._load_model()
     
-    async def embed_text(self, text: str) -> List[float]:
-        """Generate embedding for a single text."""
+    def _load_model(self):
+        """Load the Qodo model using Sentence Transformers."""
         try:
-            # Generate embedding
-            embedding = self.model.encode(text, convert_to_tensor=False)
+            self.logger.info(f"Loading Qodo embedding model: {self.model_name}")
             
-            # Convert to list if it's a numpy array
-            if isinstance(embedding, np.ndarray):
-                embedding = embedding.tolist()
+            # Load model with Sentence Transformers
+            self.model = SentenceTransformer(self.model_name)
             
-            return embedding
+            # Set device
+            device = self.config.device
+            if device == "auto":
+                device = "cuda" if self.model.device.type == "cuda" else "cpu"
+            
+            self.model = self.model.to(device)
+            
+            self.logger.info(f"Successfully loaded Qodo model on {device}")
+            self.logger.info(f"Model configuration: max_length={self.config.max_length}, batch_size={self.config.batch_size}")
+            
         except Exception as e:
-            self.logger.error(f"Error generating embedding: {e}")
-            # Return zero vector as fallback
-            return [0.0] * self.embedding_dim
+            self.logger.error(f"Failed to load Qodo model: {e}")
+            raise
     
-    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
-        """Generate embeddings for multiple texts."""
-        try:
-            # Generate embeddings in batch
-            embeddings = self.model.encode(texts, convert_to_tensor=False)
+    def _get_embeddings(self, texts: List[str]) -> np.ndarray:
+        """Generate embeddings for a list of texts using the Qodo model.
+        
+        Args:
+            texts: List of text strings to embed
             
-            # Convert to list of lists
-            if isinstance(embeddings, np.ndarray):
-                embeddings = embeddings.tolist()
+        Returns:
+            numpy array of embeddings with shape (len(texts), embedding_dim)
+        """
+        try:
+            # Generate embeddings using Sentence Transformers
+            # The model automatically handles batching and normalization
+            embeddings = self.model.encode(
+                texts,
+                batch_size=self.config.batch_size,
+                max_length=self.config.max_length,
+                normalize_embeddings=self.config.normalize_embeddings,
+                convert_to_numpy=True
+            )
             
             return embeddings
+                
         except Exception as e:
             self.logger.error(f"Error generating embeddings: {e}")
-            # Return zero vectors as fallback
-            return [[0.0] * self.embedding_dim for _ in texts]
+            raise
     
-    async def embed_query(self, query: str) -> List[float]:
-        """Generate embedding for a search query."""
-        return await self.embed_text(query)
+    async def generate_embeddings(self, texts: Union[str, List[str]]) -> np.ndarray:
+        """Generate embeddings for text(s) asynchronously.
+        
+        Args:
+            texts: Single text string or list of text strings
+            
+        Returns:
+            numpy array of embeddings
+        """
+        if isinstance(texts, str):
+            texts = [texts]
+        
+        # Run embedding generation in thread pool to avoid blocking
+        loop = asyncio.get_event_loop()
+        embeddings = await loop.run_in_executor(None, self._get_embeddings, texts)
+        
+        return embeddings
     
-    async def similarity(self, embedding1: List[float], embedding2: List[float]) -> float:
-        """Calculate cosine similarity between two embeddings."""
+    def generate_embeddings_sync(self, texts: Union[str, List[str]]) -> np.ndarray:
+        """Generate embeddings for text(s) synchronously.
+        
+        Args:
+            texts: Single text string or list of text strings
+            
+        Returns:
+            numpy array of embeddings
+        """
+        if isinstance(texts, str):
+            texts = [texts]
+        
+        return self._get_embeddings(texts)
+    
+    def get_embedding_dimension(self) -> int:
+        """Get the dimension of the embeddings.
+        
+        Returns:
+            Embedding dimension (1536 for Qodo-Embed-1-1.5B)
+        """
+        if self.model is None:
+            raise RuntimeError("Model not loaded")
+        
+        # Qodo-Embed-1-1.5B has 1536 dimensions
+        return 1536
+    
+    def is_ready(self) -> bool:
+        """Check if the embedding service is ready.
+        
+        Returns:
+            True if model is loaded
+        """
+        return self.model is not None
+    
+    def health_check(self) -> dict:
+        """Perform a health check on the embedding service.
+        
+        Returns:
+            Dictionary with health status and model info
+        """
         try:
-            # Convert to numpy arrays
-            vec1 = np.array(embedding1)
-            vec2 = np.array(embedding2)
+            if not self.is_ready():
+                return {
+                    "status": "unhealthy",
+                    "error": "Model not loaded",
+                    "model_name": self.model_name
+                }
+            
+            # Test embedding generation
+            test_text = "Hello world"
+            embedding = self.generate_embeddings_sync(test_text)
+            
+            return {
+                "status": "healthy",
+                "model_name": self.model_name,
+                "device": str(self.model.device),
+                "embedding_dimension": self.get_embedding_dimension(),
+                "test_embedding_shape": embedding.shape,
+                "model_loaded": True,
+                "config": {
+                    "max_length": self.config.max_length,
+                    "batch_size": self.config.batch_size,
+                    "normalize_embeddings": self.config.normalize_embeddings
+                }
+            }
+            
+        except Exception as e:
+            return {
+                "status": "unhealthy",
+                "error": str(e),
+                "model_name": self.model_name
+            }
+    
+    def similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
+        """Calculate cosine similarity between two embeddings.
+        
+        Args:
+            embedding1: First embedding vector
+            embedding2: Second embedding vector
+            
+        Returns:
+            Cosine similarity score between -1 and 1
+        """
+        try:
+            # Ensure embeddings are 2D
+            if embedding1.ndim == 1:
+                embedding1 = embedding1.reshape(1, -1)
+            if embedding2.ndim == 1:
+                embedding2 = embedding2.reshape(1, -1)
             
             # Calculate cosine similarity
-            similarity = np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+            similarity = self.model.similarity(embedding1, embedding2)
             
-            return float(similarity)
+            # Return scalar if single comparison
+            if similarity.size == 1:
+                return float(similarity)
+            else:
+                return similarity.tolist()
+                
         except Exception as e:
             self.logger.error(f"Error calculating similarity: {e}")
             return 0.0
     
     async def batch_similarity(
         self,
-        query_embedding: List[float],
-        document_embeddings: List[List[float]]
+        query_embedding: np.ndarray,
+        document_embeddings: np.ndarray
     ) -> List[float]:
-        """Calculate similarities between query and multiple documents."""
+        """Calculate similarities between query and multiple documents.
+        
+        Args:
+            query_embedding: Query embedding vector
+            document_embeddings: Document embedding vectors
+            
+        Returns:
+            List of similarity scores
+        """
         try:
-            query_vec = np.array(query_embedding)
-            doc_vecs = np.array(document_embeddings)
+            # Ensure query is 2D
+            if query_embedding.ndim == 1:
+                query_embedding = query_embedding.reshape(1, -1)
             
-            # Calculate cosine similarities
-            similarities = np.dot(doc_vecs, query_vec) / (
-                np.linalg.norm(doc_vecs, axis=1) * np.linalg.norm(query_vec)
-            )
+            # Calculate similarities
+            similarities = self.model.similarity(query_embedding, document_embeddings)
             
-            return similarities.tolist()
+            # Convert to list
+            if isinstance(similarities, np.ndarray):
+                return similarities.flatten().tolist()
+            else:
+                return similarities
+                
         except Exception as e:
             self.logger.error(f"Error calculating batch similarities: {e}")
             return [0.0] * len(document_embeddings)
-    
-    def get_embedding_dimension(self) -> int:
-        """Get the dimension of embeddings generated by this model."""
-        return self.embedding_dim
-    
-    async def health_check(self) -> bool:
-        """Check if the embedding service is healthy."""
-        try:
-            # Test embedding generation
-            test_text = "This is a test embedding."
-            embedding = await self.embed_text(test_text)
-            
-            # Check if embedding has correct dimension
-            if len(embedding) == self.embedding_dim:
-                self.logger.info("Embedding service health check passed")
-                return True
-            else:
-                self.logger.error(f"Embedding dimension mismatch: expected {self.embedding_dim}, got {len(embedding)}")
-                return False
-        except Exception as e:
-            self.logger.error(f"Embedding service health check failed: {e}")
-            return False
