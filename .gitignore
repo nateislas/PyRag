@@ -147,6 +147,22 @@ venv.bak/
 # Cache and data directories
 cache/
 chroma_db/
+scripts/
+
+# Development and testing artifacts
+*.db
+*.sqlite
+*.sqlite3
+reports/
+test_*.py
+*_test.py
+test_*.sh
+*_test.sh
+
+# Temporary files
+=*
+*.tmp
+*.temp
 
 # Spyder project settings
 .spyderproject
