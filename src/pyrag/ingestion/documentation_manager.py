@@ -11,7 +11,8 @@ from ..logging import get_logger
 from ..llm.client import LLMClient
 from .site_crawler import SiteCrawler, CrawlResult
 from .firecrawl_client import FirecrawlClient, ScrapedDocument
-from .documentation_processor import DocumentationProcessor, ProcessingResult
+
+from .enhanced_documentation_processor import EnhancedDocumentationProcessor, EnhancedProcessingResult
 from ..vector_store import VectorStore
 from ..embeddings import EmbeddingService
 
@@ -58,8 +59,14 @@ class DocumentationManager:
         self.llm_client = llm_client
         self.firecrawl_api_key = firecrawl_api_key
         self.cache_dir = Path(cache_dir)
-        self.processor = DocumentationProcessor()
         self.logger = get_logger(__name__)
+        
+        # Always use enhanced processor for semantic chunking and rich metadata
+        if not llm_client:
+            raise ValueError("LLM client is required for enhanced documentation processing")
+        
+        self.processor = EnhancedDocumentationProcessor(llm_client=llm_client)
+        self.logger.info("Using enhanced documentation processor with semantic chunking")
         
         # Create cache directory
         self.cache_dir.mkdir(exist_ok=True)
@@ -215,11 +222,19 @@ class DocumentationManager:
         # Process each document
         for doc in documents:
             try:
-                result = self.processor.process_scraped_document(
-                    scraped_doc=doc,
-                    library_name=job.library_name,
-                    version=job.version
-                )
+                # Check if processor is async (enhanced) or sync (basic)
+                if hasattr(self.processor, 'process_scraped_document') and asyncio.iscoroutinefunction(self.processor.process_scraped_document):
+                    result = await self.processor.process_scraped_document(
+                        scraped_doc=doc,
+                        library_name=job.library_name,
+                        version=job.version
+                    )
+                else:
+                    result = self.processor.process_scraped_document(
+                        scraped_doc=doc,
+                        library_name=job.library_name,
+                        version=job.version
+                    )
                 processing_results.append(result)
                 
                 total_chunks += len(result.chunks)
@@ -235,6 +250,8 @@ class DocumentationManager:
         
         # Store in vector database
         stored_chunks = []
+        enhanced_metadata_aggregated = {}
+        
         for result in processing_results:
             for chunk in result.chunks:
                 try:
@@ -248,13 +265,47 @@ class DocumentationManager:
                     stored_chunks.extend(chunk_ids)
                 except Exception as e:
                     self.logger.error(f"Error storing chunk: {e}")
+            
+            # Aggregate enhanced metadata if available
+            if hasattr(result, 'enhanced_metadata') and result.enhanced_metadata:
+                for key, value in result.enhanced_metadata.items():
+                    if key not in enhanced_metadata_aggregated:
+                        enhanced_metadata_aggregated[key] = []
+                    if isinstance(value, list):
+                        enhanced_metadata_aggregated[key].extend(value)
+                    else:
+                        enhanced_metadata_aggregated[key].append(value)
+        
+        # Remove duplicates from aggregated metadata (handle non-hashable types)
+        for key in enhanced_metadata_aggregated:
+            if isinstance(enhanced_metadata_aggregated[key], list):
+                # Convert to strings for deduplication if items are not hashable
+                try:
+                    enhanced_metadata_aggregated[key] = list(set(enhanced_metadata_aggregated[key]))
+                except TypeError:
+                    # If items are not hashable (like dicts), use a different approach
+                    seen = set()
+                    unique_items = []
+                    for item in enhanced_metadata_aggregated[key]:
+                        if isinstance(item, dict):
+                            # Convert dict to string for comparison
+                            item_str = str(sorted(item.items()))
+                            if item_str not in seen:
+                                seen.add(item_str)
+                                unique_items.append(item)
+                        else:
+                            if item not in seen:
+                                seen.add(item)
+                                unique_items.append(item)
+                    enhanced_metadata_aggregated[key] = unique_items
         
         processing_stats = {
             "total_documents": len(documents),
             "total_chunks": total_chunks,
             "total_content_length": total_content_length,
             "content_type_distribution": content_type_distribution,
-            "average_chunks_per_document": total_chunks / len(documents) if documents else 0
+            "average_chunks_per_document": total_chunks / len(documents) if documents else 0,
+            "enhanced_metadata": enhanced_metadata_aggregated if enhanced_metadata_aggregated else None
         }
         
         storage_stats = {

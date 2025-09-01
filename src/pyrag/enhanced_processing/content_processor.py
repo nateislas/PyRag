@@ -4,6 +4,39 @@ import re
 from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from .semantic_chunker import SemanticChunk
+# Import utility function locally to avoid circular import
+def parse_llm_json_response(content: str):
+    """Parse LLM JSON response with markdown code block handling."""
+    import re
+    import json
+    
+    # Remove markdown code blocks if present
+    content = re.sub(r'```json\s*', '', content)
+    content = re.sub(r'```\s*$', '', content)
+    content = content.strip()
+    
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        # Try to extract JSON from the response
+        try:
+            # Look for JSON-like content
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(0))
+        except:
+            pass
+        
+        # If all else fails, try to parse as a simple list
+        try:
+            # Look for array-like content
+            array_match = re.search(r'\[.*\]', content, re.DOTALL)
+            if array_match:
+                return json.loads(array_match.group(0))
+        except:
+            pass
+        
+        raise e
 from ..llm.client import LLMClient
 from ..logging import get_logger
 
@@ -222,8 +255,7 @@ class ContentTypeProcessor:
             )
             
             content = response.choices[0].message.content
-            import json
-            result = json.loads(content)
+            result = parse_llm_json_response(content)
             
             return result
             
@@ -438,8 +470,7 @@ class ContentTypeProcessor:
                 )
                 
                 content = response.choices[0].message.content
-                import json
-                result = json.loads(content)
+                result = parse_llm_json_response(content)
                 
                 return result
                 
@@ -530,8 +561,7 @@ class ContentTypeProcessor:
             )
             
             content = response.choices[0].message.content
-            import json
-            result = json.loads(content)
+            result = parse_llm_json_response(content)
             
             if isinstance(result, dict) and "prerequisites" in result:
                 return result["prerequisites"]
@@ -609,8 +639,7 @@ class ContentTypeProcessor:
             )
             
             content = response.choices[0].message.content
-            import json
-            result = json.loads(content)
+            result = parse_llm_json_response(content)
             
             if isinstance(result, dict) and "prerequisites" in result:
                 return result["prerequisites"]

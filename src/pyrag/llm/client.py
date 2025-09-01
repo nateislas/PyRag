@@ -6,6 +6,39 @@ from typing import List, Dict, Any, Optional
 from openai import AsyncOpenAI
 from ..config import LLMConfig
 from ..logging import get_logger
+# Import utility function locally to avoid circular import
+def parse_llm_json_response(content: str):
+    """Parse LLM JSON response with markdown code block handling."""
+    import re
+    import json
+    
+    # Remove markdown code blocks if present
+    content = re.sub(r'```json\s*', '', content)
+    content = re.sub(r'```\s*$', '', content)
+    content = content.strip()
+    
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as e:
+        # Try to extract JSON from the response
+        try:
+            # Look for JSON-like content
+            json_match = re.search(r'\{.*\}', content, re.DOTALL)
+            if json_match:
+                return json.loads(json_match.group(0))
+        except:
+            pass
+        
+        # If all else fails, try to parse as a simple list
+        try:
+            # Look for array-like content
+            array_match = re.search(r'\[.*\]', content, re.DOTALL)
+            if array_match:
+                return json.loads(array_match.group(0))
+        except:
+            pass
+        
+        raise e
 
 logger = get_logger(__name__)
 
@@ -63,9 +96,8 @@ class LLMClient:
             content = response.choices[0].message.content
             self.logger.info(f"LLM response: {content}")
             
-            # Parse JSON response
-            import json
-            result = json.loads(content)
+            # Parse JSON response using utility function
+            result = parse_llm_json_response(content)
             
             # Extract URLs from response
             if isinstance(result, dict) and "urls" in result:
