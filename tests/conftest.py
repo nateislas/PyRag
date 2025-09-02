@@ -1,15 +1,15 @@
 """Pytest configuration and fixtures."""
 
-import pytest
 from typing import Generator
 from unittest.mock import Mock, patch
 
+import pytest
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import Session, sessionmaker
 
 from pyrag.config import get_config
-from pyrag.models import Base
 from pyrag.database import get_session
+from pyrag.models import Base
 
 
 @pytest.fixture(scope="session")
@@ -25,7 +25,9 @@ def test_engine():
 @pytest.fixture
 def test_session(test_engine) -> Generator[Session, None, None]:
     """Create test database session."""
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+    TestingSessionLocal = sessionmaker(
+        autocommit=False, autoflush=False, bind=test_engine
+    )
     session = TestingSessionLocal()
     try:
         yield session

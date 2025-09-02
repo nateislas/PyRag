@@ -1,17 +1,18 @@
 """MCP-specific pytest configuration and fixtures."""
 
-import pytest
 import asyncio
 import os
-from unittest.mock import Mock, patch
 from typing import Generator
+from unittest.mock import Mock, patch
+
+import pytest
 
 # Import MCP testing utilities
 from .utils.mcp_test_utils import (
+    MCPPerformanceMonitor,
+    MCPTestDataGenerator,
     MockMCPClient,
     MockPyRAG,
-    MCPPerformanceMonitor,
-    MCPTestDataGenerator
 )
 
 
@@ -75,22 +76,27 @@ def mcp_environment_vars():
         "MCP_RATE_LIMIT_WINDOW": "3600",
         "MCP_ENABLE_API_KEYS": "false",
         "MCP_MAX_REQUEST_SIZE": "1048576",
-        "MCP_ENABLE_IP_WHITELIST": "false"
+        "MCP_ENABLE_IP_WHITELIST": "false",
     }
 
 
 @pytest.fixture
 def mcp_security_config():
     """MCP security configuration for testing."""
-    with patch.dict('os.environ', {
-        'MCP_ENABLE_RATE_LIMIT': 'true',
-        'MCP_RATE_LIMIT_REQUESTS': '10',
-        'MCP_RATE_LIMIT_WINDOW': '60',
-        'MCP_ENABLE_API_KEYS': 'false',
-        'MCP_MAX_REQUEST_SIZE': '1024',
-        'MCP_ENABLE_IP_WHITELIST': 'false'
-    }, clear=True):
+    with patch.dict(
+        "os.environ",
+        {
+            "MCP_ENABLE_RATE_LIMIT": "true",
+            "MCP_RATE_LIMIT_REQUESTS": "10",
+            "MCP_RATE_LIMIT_WINDOW": "60",
+            "MCP_ENABLE_API_KEYS": "false",
+            "MCP_MAX_REQUEST_SIZE": "1024",
+            "MCP_ENABLE_IP_WHITELIST": "false",
+        },
+        clear=True,
+    ):
         from pyrag.mcp.server import SecurityConfig
+
         return SecurityConfig()
 
 
@@ -98,28 +104,30 @@ def mcp_security_config():
 def mcp_server_instance():
     """MCP server instance for testing."""
     from pyrag.mcp.server import mcp
+
     return mcp
 
 
 @pytest.fixture
 def mock_mcp_context():
     """Mock MCP context for testing."""
+
     class MockContext:
         def __init__(self, client_ip: str = "127.0.0.1"):
             self.client_ip = client_ip
             self.info_calls = []
             self.error_calls = []
             self.progress_calls = []
-        
+
         async def info(self, message: str):
             self.info_calls.append(message)
-        
+
         async def error(self, message: str):
             self.error_calls.append(message)
-        
+
         async def progress(self, message: str, progress: float):
             self.progress_calls.append((message, progress))
-    
+
     return MockContext()
 
 
@@ -127,6 +135,7 @@ def mock_mcp_context():
 def rate_limit_store_clean():
     """Clean rate limit store for testing."""
     from pyrag.mcp.server import rate_limit_store
+
     # Clear the store before each test
     rate_limit_store.clear()
     yield rate_limit_store
@@ -137,8 +146,9 @@ def rate_limit_store_clean():
 @pytest.fixture
 def mock_pyrag_singleton():
     """Mock PyRAG singleton for testing."""
-    with patch('pyrag.mcp.server._pyrag_instance', None):
+    with patch("pyrag.mcp.server._pyrag_instance", None):
         from pyrag.mcp.server import get_pyrag
+
         yield get_pyrag
 
 
@@ -148,9 +158,9 @@ def performance_test_config():
     """Configuration for performance testing."""
     return {
         "max_response_time": 5.0,  # seconds
-        "max_memory_usage": 512,   # MB
+        "max_memory_usage": 512,  # MB
         "min_success_rate": 0.95,  # 95%
-        "max_concurrent_requests": 10
+        "max_concurrent_requests": 10,
     }
 
 
@@ -161,7 +171,7 @@ def load_test_data():
         "concurrent_users": 5,
         "requests_per_user": 20,
         "think_time": 1.0,  # seconds between requests
-        "test_duration": 60  # seconds
+        "test_duration": 60,  # seconds
     }
 
 
@@ -179,18 +189,14 @@ def malicious_inputs():
         "",  # Empty input
         None,  # Null input
         {"key": "value"},  # Non-string input
-        ["list", "input"]  # List input
+        ["list", "input"],  # List input
     ]
 
 
 @pytest.fixture
 def valid_api_keys():
     """Valid API keys for testing."""
-    return [
-        "valid_key_1",
-        "valid_key_2",
-        "valid_key_3"
-    ]
+    return ["valid_key_1", "valid_key_2", "valid_key_3"]
 
 
 @pytest.fixture
@@ -201,7 +207,7 @@ def invalid_api_keys():
         None,
         "invalid_key",
         "key_with_special_chars!@#$%",
-        "x" * 1000  # Very long key
+        "x" * 1000,  # Very long key
     ]
 
 
@@ -211,6 +217,7 @@ def mcp_server_ready():
     """Check if MCP server is ready for testing."""
     try:
         from pyrag.mcp.server import mcp
+
         return mcp is not None
     except ImportError:
         return False
@@ -221,6 +228,7 @@ def pyrag_core_ready():
     """Check if PyRAG core is ready for testing."""
     try:
         from pyrag.core import PyRAG
+
         return True
     except ImportError:
         return False
@@ -236,22 +244,22 @@ def fastapi_test_data():
             "What is the best way to handle errors in FastAPI?",
             "How to implement authentication in FastAPI?",
             "How to use FastAPI with databases?",
-            "What are FastAPI dependencies?"
+            "What are FastAPI dependencies?",
         ],
         "api_paths": [
             "FastAPI",
             "FastAPI.get",
             "FastAPI.post",
             "FastAPI.put",
-            "FastAPI.delete"
+            "FastAPI.delete",
         ],
         "examples": [
             "app = FastAPI()",
             "app.get('/')",
             "app.post('/items')",
             "app.put('/items/{item_id}')",
-            "app.delete('/items/{item_id}')"
-        ]
+            "app.delete('/items/{item_id}')",
+        ],
     }
 
 
@@ -264,22 +272,22 @@ def pandas_test_data():
             "What is the best way to handle missing data in pandas?",
             "How to merge DataFrames in pandas?",
             "How to group data in pandas?",
-            "How to create visualizations with pandas?"
+            "How to create visualizations with pandas?",
         ],
         "api_paths": [
             "pandas.DataFrame",
             "pandas.DataFrame.merge",
             "pandas.DataFrame.groupby",
             "pandas.DataFrame.fillna",
-            "pandas.DataFrame.plot"
+            "pandas.DataFrame.plot",
         ],
         "examples": [
             "df = pd.DataFrame(data)",
             "df.merge(other_df, on='key')",
             "df.groupby('column').agg('mean')",
             "df.fillna(0)",
-            "df.plot(kind='bar')"
-        ]
+            "df.plot(kind='bar')",
+        ],
     }
 
 
@@ -295,7 +303,7 @@ def error_scenarios():
         "invalid_input": ValueError("Invalid input provided"),
         "resource_not_found": FileNotFoundError("Resource not found"),
         "permission_denied": PermissionError("Permission denied"),
-        "memory_error": MemoryError("Out of memory")
+        "memory_error": MemoryError("Out of memory"),
     }
 
 
@@ -307,6 +315,7 @@ def cleanup_after_test():
     # Clean up any global state that might have been modified
     try:
         from pyrag.mcp.server import rate_limit_store
+
         rate_limit_store.clear()
     except ImportError:
         pass
@@ -315,12 +324,8 @@ def cleanup_after_test():
 # Skip conditions
 def pytest_configure(config):
     """Configure pytest for MCP testing."""
-    config.addinivalue_line(
-        "markers", "mcp: mark test as MCP-specific"
-    )
-    config.addinivalue_line(
-        "markers", "mcp_security: mark test as MCP security test"
-    )
+    config.addinivalue_line("markers", "mcp: mark test as MCP-specific")
+    config.addinivalue_line("markers", "mcp_security: mark test as MCP security test")
     config.addinivalue_line(
         "markers", "mcp_performance: mark test as MCP performance test"
     )

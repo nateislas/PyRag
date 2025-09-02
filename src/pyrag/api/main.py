@@ -1,15 +1,15 @@
 """Main FastAPI application for PyRAG."""
 
 from contextlib import asynccontextmanager
-from typing import Dict, Any
+from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ..config import settings
-from ..logging import setup_logging, get_logger
 from ..database import create_tables
+from ..logging import get_logger, setup_logging
 
 # Setup logging
 setup_logging()
@@ -28,9 +28,9 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Failed to create database tables: {e}")
         raise
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down PyRAG API server")
 
@@ -71,10 +71,10 @@ async def health_check() -> Dict[str, Any]:
     """Health check endpoint."""
     try:
         from ..core import PyRAG
-        
+
         # Initialize PyRAG to test services
         pyrag = PyRAG()
-        
+
         # Test vector store
         vector_store_healthy = True
         try:
@@ -82,7 +82,7 @@ async def health_check() -> Dict[str, Any]:
         except Exception as e:
             logger.error(f"Vector store health check failed: {e}")
             vector_store_healthy = False
-        
+
         # Test embedding service
         embedding_healthy = True
         try:
@@ -90,10 +90,10 @@ async def health_check() -> Dict[str, Any]:
         except Exception as e:
             logger.error(f"Embedding service health check failed: {e}")
             embedding_healthy = False
-        
+
         # Determine overall status
         overall_healthy = vector_store_healthy and embedding_healthy
-        
+
         return {
             "status": "healthy" if overall_healthy else "unhealthy",
             "environment": settings.environment,
@@ -138,7 +138,7 @@ async def global_exception_handler(request, exc):
 
 
 # Import and include routers
-from .routers import search, libraries
+from .routers import libraries, search
 
 app.include_router(search.router, prefix="/api/v1/search", tags=["search"])
 app.include_router(libraries.router, prefix="/api/v1/libraries", tags=["libraries"])

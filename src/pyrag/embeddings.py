@@ -3,11 +3,13 @@
 import asyncio
 from pathlib import Path
 from typing import List, Union
+
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
-from pyrag.logging import get_logger
+
 from pyrag.config import get_config
+from pyrag.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -17,7 +19,7 @@ class EmbeddingService:
 
     def __init__(self, config=None):
         """Initialize the embedding service with the Qodo model.
-        
+
         Args:
             config: Optional configuration object, uses default if not provided
         """
@@ -28,11 +30,11 @@ class EmbeddingService:
         self.model_name = "Qodo/Qodo-Embed-1-1.5B"  # Original model
         self.model = None
         self.logger = logger
-        
+
         # Setup local model cache directory
         self.model_cache_dir = Path("./models")
         self.model_cache_dir.mkdir(exist_ok=True)
-        
+
         # Initialize model
         self._load_model()
 
@@ -40,35 +42,40 @@ class EmbeddingService:
         """Quantize the model to INT4 precision using torch.quantization."""
         try:
             self.logger.info(f"Applying INT4 quantization to model: {model_path}")
-            
+
             # Load the original model
             model = SentenceTransformer(model_path)
-            
+
             # Get the underlying transformer model
             transformer_model = model._first_module().auto_model
-            
+
             # Apply INT4 quantization to linear layers
             quantized_model = torch.quantization.quantize_dynamic(
-                transformer_model,
-                {torch.nn.Linear},
-                dtype=torch.qint4
+                transformer_model, {torch.nn.Linear}, dtype=torch.qint4
             )
-            
+
             # Save quantized model
             quantized_path = str(self.model_cache_dir / f"{Path(model_path).name}_int4")
             Path(quantized_path).mkdir(exist_ok=True)
-            
+
             # Save the quantized transformer model
             quantized_model.save_pretrained(quantized_path)
-            
+
             # Copy tokenizer and other files
             import shutil
-            shutil.copytree(f"{model_path}/tokenizer", f"{quantized_path}/tokenizer", dirs_exist_ok=True)
-            shutil.copytree(f"{model_path}/config", f"{quantized_path}/config", dirs_exist_ok=True)
-            
+
+            shutil.copytree(
+                f"{model_path}/tokenizer",
+                f"{quantized_path}/tokenizer",
+                dirs_exist_ok=True,
+            )
+            shutil.copytree(
+                f"{model_path}/config", f"{quantized_path}/config", dirs_exist_ok=True
+            )
+
             self.logger.info(f"INT4 quantized model saved to: {quantized_path}")
             return quantized_path
-            
+
         except Exception as e:
             self.logger.error(f"INT4 quantization failed: {e}")
             raise
@@ -76,14 +83,19 @@ class EmbeddingService:
     def _load_quantized_model(self, model_path: str) -> bool:
         """Load a locally cached quantized model."""
         try:
-            quantized_path = str(self.model_cache_dir / f"{Path(model_path).name.replace('/', '_')}_quantized")
-            
+            quantized_path = str(
+                self.model_cache_dir
+                / f"{Path(model_path).name.replace('/', '_')}_quantized"
+            )
+
             if Path(quantized_path).exists():
-                self.logger.info(f"Loading cached INT8 quantized model: {quantized_path}")
+                self.logger.info(
+                    f"Loading cached INT8 quantized model: {quantized_path}"
+                )
                 self.model = SentenceTransformer(quantized_path)
                 return True
             return False
-            
+
         except Exception as e:
             self.logger.error(f"Failed to load quantized model: {e}")
             return False
@@ -94,18 +106,20 @@ class EmbeddingService:
             # Determine target device and quantization compatibility
             device = self.config.device
             enable_quantization = self.config.enable_int4_quantization
-            
+
             if device == "auto":
                 if torch.cuda.is_available():
                     device = "cuda"
-                elif hasattr(torch, 'mps') and torch.mps.is_available():
+                elif hasattr(torch, "mps") and torch.mps.is_available():
                     device = "mps"
                     # Disable quantization on MPS due to memory constraints
                     enable_quantization = False
-                    self.logger.info("Disabling quantization on MPS due to memory constraints")
+                    self.logger.info(
+                        "Disabling quantization on MPS due to memory constraints"
+                    )
                 else:
                     device = "cpu"
-            
+
             # First try to load cached quantized model if enabled and compatible
             if self.config.cache_models_locally and enable_quantization:
                 if self._load_quantized_model(self.model_name):
@@ -113,45 +127,51 @@ class EmbeddingService:
                     self.model = self.model.to(device)
                     self.logger.info(f"Moved quantized model to {device}")
                     return
-            
+
             # Load original model
             self.logger.info(f"Loading original Qodo model: {self.model_name}")
             self.model = SentenceTransformer(self.model_name)
-            
+
             # Apply quantization if enabled and compatible
             if enable_quantization and device != "mps":
                 self.logger.info("Attempting quantization...")
                 try:
                     quantized_path = self._quantize_model_int4(self.model_name)
-                    
+
                     # Reload the quantized version
                     self.model = SentenceTransformer(quantized_path)
                     self.logger.info("Successfully applied quantization")
-                    
+
                 except Exception as e:
-                    self.logger.warning(f"Quantization failed, using original model: {e}")
+                    self.logger.warning(
+                        f"Quantization failed, using original model: {e}"
+                    )
             else:
                 if device == "mps":
-                    self.logger.info("Using original model (quantization disabled on MPS)")
-            
+                    self.logger.info(
+                        "Using original model (quantization disabled on MPS)"
+                    )
+
             # Move to target device
             self.model = self.model.to(device)
-            
+
             self.logger.info(f"Successfully loaded Qodo model on {device}")
             if enable_quantization and device != "mps":
                 self.logger.info("Model optimized with quantization")
-            self.logger.info(f"Model configuration: max_length={self.config.max_length}, batch_size={self.config.batch_size}")
-            
+            self.logger.info(
+                f"Model configuration: max_length={self.config.max_length}, batch_size={self.config.batch_size}"
+            )
+
         except Exception as e:
             self.logger.error(f"Failed to load Qodo model: {e}")
             raise
-    
+
     def _get_embeddings(self, texts: List[str]) -> np.ndarray:
         """Generate embeddings for a list of texts using the Qodo model.
-        
+
         Args:
             texts: List of text strings to embed
-            
+
         Returns:
             numpy array of embeddings with shape (len(texts), embedding_dim)
         """
@@ -163,70 +183,70 @@ class EmbeddingService:
                 batch_size=self.config.batch_size,
                 max_length=self.config.max_length,
                 normalize_embeddings=self.config.normalize_embeddings,
-                convert_to_numpy=True
+                convert_to_numpy=True,
             )
-            
+
             return embeddings
-                
+
         except Exception as e:
             self.logger.error(f"Error generating embeddings: {e}")
             raise
-    
+
     async def generate_embeddings(self, texts: Union[str, List[str]]) -> np.ndarray:
         """Generate embeddings for text(s) asynchronously.
-        
+
         Args:
             texts: Single text string or list of text strings
-            
+
         Returns:
             numpy array of embeddings
         """
         if isinstance(texts, str):
             texts = [texts]
-        
+
         # Run embedding generation in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
         embeddings = await loop.run_in_executor(None, self._get_embeddings, texts)
-        
+
         return embeddings
-    
+
     def generate_embeddings_sync(self, texts: Union[str, List[str]]) -> np.ndarray:
         """Generate embeddings for text(s) synchronously.
-        
+
         Args:
             texts: Single text string or list of text strings
-            
+
         Returns:
             numpy array of embeddings
         """
         if isinstance(texts, str):
             texts = [texts]
-        
+
         return self._get_embeddings(texts)
-    
+
     def get_embedding_dimension(self) -> int:
         """Get the dimension of the embeddings.
-        
+
         Returns:
             Embedding dimension (1536 for Qodo-Embed-1-1.5B)
         """
         if self.model is None:
             raise RuntimeError("Model not loaded")
-        
+
         # Qodo-Embed-1-1.5B has 1536 dimensions
         return 1536
-    
+
     def is_ready(self) -> bool:
         """Check if the embedding service is ready.
-        
+
         Returns:
             True if model is loaded
         """
         return self.model is not None
-    
+
     def health_check(self) -> dict:
         """Perform a health check on the embedding service.
-        
+
         Returns:
             Dictionary with health status and model info
         """
@@ -235,13 +255,13 @@ class EmbeddingService:
                 return {
                     "status": "unhealthy",
                     "error": "Model not loaded",
-                    "model_name": self.model_name
+                    "model_name": self.model_name,
                 }
-            
+
             # Test embedding generation
             test_text = "Hello world"
             embedding = self.generate_embeddings_sync(test_text)
-            
+
             return {
                 "status": "healthy",
                 "model_name": self.model_name,
@@ -252,24 +272,24 @@ class EmbeddingService:
                 "config": {
                     "max_length": self.config.max_length,
                     "batch_size": self.config.batch_size,
-                    "normalize_embeddings": self.config.normalize_embeddings
-                }
+                    "normalize_embeddings": self.config.normalize_embeddings,
+                },
             }
-            
+
         except Exception as e:
             return {
                 "status": "unhealthy",
                 "error": str(e),
-                "model_name": self.model_name
+                "model_name": self.model_name,
             }
-    
+
     def similarity(self, embedding1: np.ndarray, embedding2: np.ndarray) -> float:
         """Calculate cosine similarity between two embeddings.
-        
+
         Args:
             embedding1: First embedding vector
             embedding2: Second embedding vector
-            
+
         Returns:
             Cosine similarity score between -1 and 1
         """
@@ -279,31 +299,29 @@ class EmbeddingService:
                 embedding1 = embedding1.reshape(1, -1)
             if embedding2.ndim == 1:
                 embedding2 = embedding2.reshape(1, -1)
-            
+
             # Calculate cosine similarity
             similarity = self.model.similarity(embedding1, embedding2)
-            
+
             # Return scalar if single comparison
             if similarity.size == 1:
                 return float(similarity)
             else:
                 return similarity.tolist()
-                
+
         except Exception as e:
             self.logger.error(f"Error calculating similarity: {e}")
             return 0.0
-    
+
     async def batch_similarity(
-        self,
-        query_embedding: np.ndarray,
-        document_embeddings: np.ndarray
+        self, query_embedding: np.ndarray, document_embeddings: np.ndarray
     ) -> List[float]:
         """Calculate similarities between query and multiple documents.
-        
+
         Args:
             query_embedding: Query embedding vector
             document_embeddings: Document embedding vectors
-            
+
         Returns:
             List of similarity scores
         """
@@ -311,30 +329,38 @@ class EmbeddingService:
             # Ensure query is 2D
             if query_embedding.ndim == 1:
                 query_embedding = query_embedding.reshape(1, -1)
-            
+
             # Calculate similarities
             similarities = self.model.similarity(query_embedding, document_embeddings)
-            
+
             # Debug logging to understand the structure
             self.logger.debug(f"Similarities type: {type(similarities)}")
-            self.logger.debug(f"Similarities shape/structure: {getattr(similarities, 'shape', 'no shape')}")
-            
+            self.logger.debug(
+                f"Similarities shape/structure: {getattr(similarities, 'shape', 'no shape')}"
+            )
+
             # Convert to list of floats, handling different tensor types
             if isinstance(similarities, np.ndarray):
                 # Convert numpy array to list of floats
                 flattened = similarities.flatten()
                 self.logger.debug(f"Flattened numpy array: {flattened.shape}")
                 return [float(sim) for sim in flattened]
-            elif hasattr(similarities, 'tolist'):
+            elif hasattr(similarities, "tolist"):
                 # Handle PyTorch tensors
                 tensor_list = similarities.tolist()
-                self.logger.debug(f"PyTorch tensor converted to list: {type(tensor_list)}")
+                self.logger.debug(
+                    f"PyTorch tensor converted to list: {type(tensor_list)}"
+                )
                 # Handle nested lists (common with PyTorch)
                 if isinstance(tensor_list, list) and len(tensor_list) > 0:
                     if isinstance(tensor_list[0], list):
                         # Nested list structure, flatten it
-                        flattened = [item for sublist in tensor_list for item in sublist]
-                        self.logger.debug(f"Flattened nested list: {len(flattened)} items")
+                        flattened = [
+                            item for sublist in tensor_list for item in sublist
+                        ]
+                        self.logger.debug(
+                            f"Flattened nested list: {len(flattened)} items"
+                        )
                         return [float(sim) for sim in flattened]
                     else:
                         return [float(sim) for sim in tensor_list]
@@ -343,15 +369,17 @@ class EmbeddingService:
                 # Handle list/tuple of tensors
                 result = []
                 for sim in similarities:
-                    if hasattr(sim, 'item'):
+                    if hasattr(sim, "item"):
                         result.append(float(sim.item()))
-                    elif hasattr(sim, 'tolist'):
+                    elif hasattr(sim, "tolist"):
                         # Handle nested structure in individual tensors
                         sim_list = sim.tolist()
                         if isinstance(sim_list, list) and len(sim_list) > 0:
                             if isinstance(sim_list[0], list):
                                 # Nested list, flatten
-                                flattened = [item for sublist in sim_list for item in sublist]
+                                flattened = [
+                                    item for sublist in sim_list for item in sublist
+                                ]
                                 result.extend([float(item) for item in flattened])
                             else:
                                 result.append(float(sim_list[0]))
@@ -363,7 +391,7 @@ class EmbeddingService:
             else:
                 # Fallback: try to convert directly
                 return [float(similarities)]
-                
+
         except Exception as e:
             self.logger.error(f"Error calculating batch similarities: {e}")
             self.logger.error(f"Query embedding shape: {query_embedding.shape}")

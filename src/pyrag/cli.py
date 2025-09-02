@@ -4,8 +4,8 @@ import asyncio
 import sys
 from pathlib import Path
 
-from .mcp.server import main as mcp_main
 from .logging import get_logger
+from .mcp.server import main as mcp_main
 
 logger = get_logger(__name__)
 

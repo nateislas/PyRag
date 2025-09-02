@@ -6,23 +6,29 @@
       "description": "Framework for developing applications with LLMs - THE MOST IMPORTANT FOR GENAI",
       "category": "ai_ml",
       "expected_complexity": "high",
-      "max_crawl_pages": 200,
-      "max_content_pages": 150,
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
       "priority": 1,
       "enabled": true,
-      "notes": "Most comprehensive LLM framework - need full coverage of chains, agents, memory, tools, integrations"
+      "notes": "Most comprehensive LLM framework - need full coverage of chains, agents, memory, tools, integrations. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
     },
     {
       "name": "pydantic",
       "url": "https://docs.pydantic.dev/latest/",
       "description": "Data validation using Python type annotations - ESSENTIAL FOR AI DATA PIPELINES",
       "category": "data_validation",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 100,
-      "max_content_pages": 80,
+      "expected_complexity": "high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
       "priority": 1,
       "enabled": true,
-      "notes": "Core data validation - need all validation types, serialization, configuration, best practices"
+      "notes": "Comprehensive coverage needed: API docs, concepts, examples, tutorials, configuration, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://docs.pydantic.dev/latest/api/base_model/",
+        "https://docs.pydantic.dev/latest/concepts/models/",
+        "https://docs.pydantic.dev/latest/examples/files/",
+        "https://docs.pydantic.dev/latest/help_with_pydantic/"
+      ]
     },
     {
       "name": "fastapi",
@@ -30,11 +36,16 @@
       "description": "Modern, fast web framework for building APIs - PERFECT FOR AI API ENDPOINTS",
       "category": "web_framework",
       "expected_complexity": "high",
-      "max_crawl_pages": 150,
-      "max_content_pages": 120,
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
       "priority": 1,
       "enabled": true,
-      "notes": "API framework - need all endpoints, middleware, dependencies, security, deployment patterns"
+      "notes": "Comprehensive coverage needed: tutorials, API reference, advanced topics, examples, deployment patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://fastapi.tiangolo.com/tutorial/",
+        "https://fastapi.tiangolo.com/reference/",
+        "https://fastapi.tiangolo.com/advanced/"
+      ]
     },
     {
       "name": "openai",

@@ -1,15 +1,15 @@
 """Database models for PyRAG."""
 
+from .analytics import PerformanceMetric, QueryMetric
 from .base import Base
-from .library import Library, LibraryVersion
-from .document import DocumentChunk
 from .compliance import ComplianceStatus, UpdateLog
-from .analytics import QueryMetric, PerformanceMetric
+from .document import DocumentChunk
+from .library import Library, LibraryVersion
 
 __all__ = [
     "Base",
     "Library",
-    "LibraryVersion", 
+    "LibraryVersion",
     "DocumentChunk",
     "ComplianceStatus",
     "UpdateLog",

@@ -1,5 +1,5 @@
 """API routers for PyRAG."""
 
-from . import search, libraries
+from . import libraries, search
 
 __all__ = ["search", "libraries"]

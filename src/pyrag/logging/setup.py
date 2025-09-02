@@ -13,10 +13,10 @@ from ..config import get_config
 
 def setup_logging() -> None:
     """Setup structured logging with correlation IDs."""
-    
+
     # Get configuration
     config = get_config()
-    
+
     # Configure structlog
     structlog.configure(
         processors=[
@@ -35,7 +35,7 @@ def setup_logging() -> None:
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
@@ -51,18 +51,18 @@ def get_logger(name: str) -> structlog.stdlib.BoundLogger:
 
 class CorrelationContext:
     """Context manager for correlation IDs."""
-    
+
     def __init__(self, correlation_id: Optional[str] = None):
         self.correlation_id = correlation_id or str(uuid.uuid4())
         self._previous_context: Optional[Dict[str, Any]] = None
-    
+
     def __enter__(self) -> str:
         """Enter correlation context."""
         self._previous_context = structlog.contextvars.get_contextvars().copy()
         structlog.contextvars.clear_contextvars()
         structlog.contextvars.bind_contextvars(correlation_id=self.correlation_id)
         return self.correlation_id
-    
+
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Exit correlation context."""
         structlog.contextvars.clear_contextvars()
@@ -73,6 +73,7 @@ class CorrelationContext:
 
 def log_with_correlation(correlation_id: Optional[str] = None):
     """Decorator to add correlation ID to function calls."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             with CorrelationContext(correlation_id):
@@ -85,7 +86,9 @@ def log_with_correlation(correlation_id: Optional[str] = None):
                 )
                 try:
                     result = func(*args, **kwargs)
-                    logger.info("Function completed successfully", function=func.__name__)
+                    logger.info(
+                        "Function completed successfully", function=func.__name__
+                    )
                     return result
                 except Exception as e:
                     logger.error(
@@ -95,5 +98,7 @@ def log_with_correlation(correlation_id: Optional[str] = None):
                         error_type=type(e).__name__,
                     )
                     raise
+
         return wrapper
+
     return decorator

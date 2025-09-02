@@ -2,13 +2,13 @@
 
 from .evaluator import RAGEvaluator
 from .judge import LLMJudge
-from .test_suite import TestSuite, TestCase, TestResult
 from .metrics import EvaluationMetrics, QualityScore
 from .reporting import EvaluationReporter
+from .test_suite import TestCase, TestResult, TestSuite
 
 __all__ = [
     "RAGEvaluator",
-    "LLMJudge", 
+    "LLMJudge",
     "TestSuite",
     "TestCase",
     "TestResult",

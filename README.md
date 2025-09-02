@@ -76,7 +76,7 @@ async def protected_route(current_user = Depends(get_current_user)):
 Your AI assistant now has comprehensive documentation for:
 
 - **LangChain** - Framework for developing applications with LLMs
-- **FastAPI** - Modern web framework for building APIs  
+- **FastAPI** - Modern web framework for building APIs
 - **Transformers** - State-of-the-art Natural Language Processing
 - **Pydantic** - Data validation using Python type annotations
 - **OpenAI** - OpenAI API client library
