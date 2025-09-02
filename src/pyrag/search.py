@@ -1,12 +1,12 @@
 """Enhanced search capabilities for PyRAG."""
 
 import re
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
-from collections import defaultdict
 
-from .logging import get_logger
 from .intelligent_strategy import IntelligentSearchStrategy, SearchStrategy
+from .logging import get_logger
 from .relationship_manager import RelationshipManager
 
 logger = get_logger(__name__)
@@ -362,23 +362,25 @@ class EnhancedSearchEngine:
         query_context: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Enhanced search using intelligent strategy selection based on coverage analysis."""
-        
+
         self.logger.info(f"Intelligent search for query: {query} in library: {library}")
-        
+
         # Select optimal search strategy based on coverage and query
         strategy_config = self.intelligent_strategy.select_strategy(
             query, library, coverage_data, query_context
         )
-        
+
         # Analyze the query for additional context
         analysis = self.query_analyzer.analyze_query(query)
-        
+
         # Generate query embedding
         query_embedding = await self.embedding_service.generate_embeddings(query)
-        
+
         # Get ordered collections to search based on strategy
-        search_collections = self.intelligent_strategy.get_collection_search_order(strategy_config)
-        
+        search_collections = self.intelligent_strategy.get_collection_search_order(
+            strategy_config
+        )
+
         # Multi-index search with strategy-based optimization
         results = await self._intelligent_multi_index_search(
             query=query,
@@ -389,7 +391,7 @@ class EnhancedSearchEngine:
             strategy_config=strategy_config,
             max_results=strategy_config.max_results * 2,  # Get more for reranking
         )
-        
+
         # Enhanced reranking using strategy-based metadata boosting
         reranked_results = await self._intelligent_rerank_results(
             results=results,
@@ -397,20 +399,19 @@ class EnhancedSearchEngine:
             strategy_config=strategy_config,
             max_results=strategy_config.max_results,
         )
-        
+
         # Context expansion if enabled
         if strategy_config.expand_context:
             expanded_results = await self._expand_search_context(
-                reranked_results, 
-                max_expansion=strategy_config.search_depth
+                reranked_results, max_expansion=strategy_config.search_depth
             )
-            reranked_results = expanded_results[:strategy_config.max_results]
-        
+            reranked_results = expanded_results[: strategy_config.max_results]
+
         self.logger.info(
             f"Intelligent search returned {len(reranked_results)} results "
             f"using {strategy_config.strategy.value} strategy"
         )
-        
+
         return reranked_results
 
     async def _intelligent_multi_index_search(
@@ -420,13 +421,13 @@ class EnhancedSearchEngine:
         library: str,
         version: Optional[str] = None,
         search_collections: List[str] = None,
-        strategy_config = None,
+        strategy_config=None,
         max_results: int = 20,
     ) -> List[Dict[str, Any]]:
         """Multi-index search optimized for intelligent strategy."""
-        
+
         all_results = []
-        
+
         # Search each collection with strategy-based optimization
         for collection_name in search_collections:
             try:
@@ -434,12 +435,12 @@ class EnhancedSearchEngine:
                 where_clause = {"library": str(library)}
                 if version:
                     where_clause["version"] = str(version)
-                
+
                 # Apply quality filtering based on strategy
                 # Note: ChromaDB where clause filtering is simplified for now
                 # TODO: Implement proper quality filtering when ChromaDB supports it
                 pass
-                
+
                 # Search the collection
                 collection_results = await self.vector_store.search(
                     query=query,
@@ -448,21 +449,25 @@ class EnhancedSearchEngine:
                     where=where_clause,
                     embedding=query_embedding,
                 )
-                
+
                 # Add collection info and apply collection weights
                 for result in collection_results:
                     result["collection"] = collection_name
                     result["score"] = 1.0 - (result.get("distance", 0.0))
                     # Apply collection weight from strategy
-                    collection_weight = strategy_config.collection_weights.get(collection_name, 1.0)
+                    collection_weight = strategy_config.collection_weights.get(
+                        collection_name, 1.0
+                    )
                     result["score"] *= collection_weight
-                
+
                 all_results.extend(collection_results)
-                
+
             except Exception as e:
-                self.logger.warning(f"Error searching collection {collection_name}: {e}")
+                self.logger.warning(
+                    f"Error searching collection {collection_name}: {e}"
+                )
                 continue
-        
+
         return all_results
 
     async def _intelligent_rerank_results(
@@ -473,27 +478,27 @@ class EnhancedSearchEngine:
         max_results: int,
     ) -> List[Dict[str, Any]]:
         """Enhanced reranking using intelligent strategy metadata boosting."""
-        
+
         if not results:
             return []
-        
+
         # Calculate reranking scores with strategy-based boosting
         reranked_results = []
         for result in results:
             # Base score from vector similarity
             base_score = result.get("score", 0.0)
-            
+
             # Apply strategy-based metadata boost
             metadata_boost = self.intelligent_strategy.calculate_metadata_boost(
                 result.get("metadata", {}), strategy_config
             )
-            
+
             # Apply query analysis boost
             query_boost = self._calculate_boost(result, query_analysis)
-            
+
             # Final score combines all factors
             final_score = base_score * metadata_boost * query_boost
-            
+
             # Create reranked result
             reranked_result = result.copy()
             reranked_result["final_score"] = final_score
@@ -502,39 +507,38 @@ class EnhancedSearchEngine:
             reranked_result["boost_breakdown"] = {
                 "metadata": metadata_boost,
                 "query": query_boost,
-                "total": final_score / base_score if base_score > 0 else 1.0
+                "total": final_score / base_score if base_score > 0 else 1.0,
             }
-            
+
             reranked_results.append(reranked_result)
-        
+
         # Sort by final score
         reranked_results.sort(key=lambda x: x["final_score"], reverse=True)
-        
+
         return reranked_results[:max_results]
 
     async def _expand_search_context(
-        self, 
-        primary_results: List[Dict[str, Any]], 
-        max_expansion: int = 3
+        self, primary_results: List[Dict[str, Any]], max_expansion: int = 3
     ) -> List[Dict[str, Any]]:
         """Expand search results using hierarchical relationships."""
-        
+
         try:
             # Use relationship manager for context expansion
             expansion_result = await self.relationship_manager.expand_search_context(
-                primary_results, 
-                max_expansion=max_expansion
+                primary_results, max_expansion=max_expansion
             )
-            
+
             # Combine primary and expanded results
-            all_results = expansion_result.primary_results + expansion_result.expanded_results
-            
+            all_results = (
+                expansion_result.primary_results + expansion_result.expanded_results
+            )
+
             # Log expansion details
             self.logger.info(
                 f"Context expansion: {len(expansion_result.primary_results)} primary + "
                 f"{len(expansion_result.expanded_results)} expanded = {len(all_results)} total"
             )
-            
+
             # Log relationship metadata
             if expansion_result.expansion_metadata:
                 metadata = expansion_result.expansion_metadata
@@ -542,86 +546,87 @@ class EnhancedSearchEngine:
                     f"Expansion metadata: ratio={metadata.get('expansion_ratio', 0):.2f}, "
                     f"avg_strength={metadata.get('average_relationship_strength', 0):.2f}"
                 )
-            
+
             return all_results
-            
+
         except Exception as e:
-            self.logger.warning(f"Context expansion failed, returning primary results: {e}")
+            self.logger.warning(
+                f"Context expansion failed, returning primary results: {e}"
+            )
             return primary_results
 
     async def discover_semantic_relationships(
-        self, 
-        documents: List[Dict[str, Any]], 
-        similarity_threshold: float = 0.7
+        self, documents: List[Dict[str, Any]], similarity_threshold: float = 0.7
     ) -> Dict[str, Any]:
         """Discover semantic relationships between documents."""
-        
+
         try:
             relationships = self.relationship_manager.discover_semantic_relationships(
                 documents, similarity_threshold
             )
-            
+
             # Create relationship summary
-            summary = self.relationship_manager.create_relationship_summary(relationships)
-            
+            summary = self.relationship_manager.create_relationship_summary(
+                relationships
+            )
+
             self.logger.info(f"Discovered {len(relationships)} semantic relationships")
-            
-            return {
-                "relationships": relationships,
-                "summary": summary,
-                "success": True
-            }
-            
+
+            return {"relationships": relationships, "summary": summary, "success": True}
+
         except Exception as e:
             self.logger.error(f"Semantic relationship discovery failed: {e}")
-            return {
-                "relationships": [],
-                "summary": {"error": str(e)},
-                "success": False
-            }
+            return {"relationships": [], "summary": {"error": str(e)}, "success": False}
 
     async def get_relationship_insights(
-        self, 
-        search_results: List[Dict[str, Any]]
+        self, search_results: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """Get insights about relationships in search results."""
-        
+
         try:
             # Discover relationships
-            relationship_result = await self.discover_semantic_relationships(search_results)
-            
+            relationship_result = await self.discover_semantic_relationships(
+                search_results
+            )
+
             if not relationship_result["success"]:
                 return relationship_result
-            
+
             # Analyze result clustering
             clustering_insights = self._analyze_result_clustering(search_results)
-            
+
             # Combine insights
             insights = {
                 "relationships": relationship_result["summary"],
                 "clustering": clustering_insights,
-                "content_type_distribution": self._analyze_content_type_distribution(search_results),
-                "quality_distribution": self._analyze_quality_distribution(search_results)
+                "content_type_distribution": self._analyze_content_type_distribution(
+                    search_results
+                ),
+                "quality_distribution": self._analyze_quality_distribution(
+                    search_results
+                ),
             }
-            
+
             return insights
-            
+
         except Exception as e:
             self.logger.error(f"Failed to get relationship insights: {e}")
             return {"error": str(e), "success": False}
 
-    def _analyze_result_clustering(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_result_clustering(
+        self, results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze how search results cluster together."""
-        
+
         if not results:
             return {"message": "No results to analyze"}
-        
+
         # Group by content type
         content_type_groups = defaultdict(list)
         for result in results:
             content_type = result.get("metadata", {}).get("content_type", "unknown")
             content_type_groups[content_type].append(result)
-        
+
         # Calculate cluster statistics
         cluster_stats = {}
         for content_type, group in content_type_groups.items():
@@ -630,61 +635,66 @@ class EnhancedSearchEngine:
                 "count": len(group),
                 "avg_score": sum(scores) / len(scores) if scores else 0,
                 "min_score": min(scores) if scores else 0,
-                "max_score": max(scores) if scores else 0
+                "max_score": max(scores) if scores else 0,
             }
-        
+
         return {
             "total_clusters": len(content_type_groups),
             "cluster_distribution": list(content_type_groups.keys()),
-            "cluster_statistics": cluster_stats
+            "cluster_statistics": cluster_stats,
         }
 
-    def _analyze_content_type_distribution(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_content_type_distribution(
+        self, results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze the distribution of content types in search results."""
-        
+
         if not results:
             return {"message": "No results to analyze"}
-        
+
         content_type_counts = defaultdict(int)
         for result in results:
             content_type = result.get("metadata", {}).get("content_type", "unknown")
             content_type_counts[content_type] += 1
-        
+
         total = len(results)
         distribution = {
-            content_type: {
-                "count": count,
-                "percentage": (count / total) * 100
-            }
+            content_type: {"count": count, "percentage": (count / total) * 100}
             for content_type, count in content_type_counts.items()
         }
-        
+
         return {
             "total_results": total,
             "distribution": distribution,
-            "primary_content_type": max(content_type_counts.items(), key=lambda x: x[1])[0] if content_type_counts else None
+            "primary_content_type": max(
+                content_type_counts.items(), key=lambda x: x[1]
+            )[0]
+            if content_type_counts
+            else None,
         }
 
-    def _analyze_quality_distribution(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def _analyze_quality_distribution(
+        self, results: List[Dict[str, Any]]
+    ) -> Dict[str, Any]:
         """Analyze the quality distribution of search results."""
-        
+
         if not results:
             return {"message": "No results to analyze"}
-        
+
         quality_scores = []
         importance_scores = []
         completeness_scores = []
-        
+
         for result in results:
             metadata = result.get("metadata", {})
-            
+
             if "content_quality_score" in metadata:
                 quality_scores.append(metadata["content_quality_score"])
             if "importance_score" in metadata:
                 importance_scores.append(metadata["importance_score"])
             if "completeness_score" in metadata:
                 completeness_scores.append(metadata["completeness_score"])
-        
+
         def calculate_stats(scores):
             if not scores:
                 return {"count": 0, "avg": 0, "min": 0, "max": 0}
@@ -692,16 +702,18 @@ class EnhancedSearchEngine:
                 "count": len(scores),
                 "avg": sum(scores) / len(scores),
                 "min": min(scores),
-                "max": max(scores)
+                "max": max(scores),
             }
-        
+
         return {
             "content_quality": calculate_stats(quality_scores),
             "importance": calculate_stats(importance_scores),
             "completeness": calculate_stats(completeness_scores),
             "overall_quality": {
                 "high_quality_count": len([s for s in quality_scores if s >= 0.8]),
-                "medium_quality_count": len([s for s in quality_scores if 0.6 <= s < 0.8]),
-                "low_quality_count": len([s for s in quality_scores if s < 0.6])
-            }
+                "medium_quality_count": len(
+                    [s for s in quality_scores if 0.6 <= s < 0.8]
+                ),
+                "low_quality_count": len([s for s in quality_scores if s < 0.6]),
+            },
         }

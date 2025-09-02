@@ -2,11 +2,12 @@
 
 import asyncio
 import json
-import aiohttp
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
+
+import aiohttp
 
 from ..embeddings import EmbeddingService
 from ..llm.client import LLMClient
@@ -179,7 +180,7 @@ class DocumentationManager:
                 crawl_statistics={},
                 errors=errors,
                 warnings=[],
-                success=False
+                success=False,
             )
 
             return DocumentationResult(
@@ -196,53 +197,61 @@ class DocumentationManager:
         """Phase 1: Discover all relevant documentation links using enhanced pipeline."""
 
         self.logger.info(f"Starting enhanced discovery for {job.library_name}")
-        
+
         try:
             # Step 1: Analyze sitemap and discover URLs
             self.logger.info("Analyzing documentation sitemap...")
-            
+
             async with aiohttp.ClientSession() as session:
                 sitemap_analyzer = SitemapAnalyzer(session=session)
-                sitemap_analysis = await sitemap_analyzer.analyze_documentation_site(job.base_url)
-            
+                sitemap_analysis = await sitemap_analyzer.analyze_documentation_site(
+                    job.base_url
+                )
+
             if not sitemap_analysis or not sitemap_analysis.discovered_urls:
                 self.logger.warning("No URLs discovered from sitemap analysis")
-                return self._create_empty_crawl_result("No URLs discovered from sitemap")
-            
-            self.logger.info(f"Discovered {len(sitemap_analysis.discovered_urls)} URLs from sitemap")
-            
+                return self._create_empty_crawl_result(
+                    "No URLs discovered from sitemap"
+                )
+
+            self.logger.info(
+                f"Discovered {len(sitemap_analysis.discovered_urls)} URLs from sitemap"
+            )
+
             # Step 2: Map documentation structure
             self.logger.info("Mapping documentation structure...")
             structure_mapper = DocumentationStructureMapper()
             structure = structure_mapper.map_documentation_structure(
-                [entry.url for entry in sitemap_analysis.discovered_urls],
-                job.base_url
+                [entry.url for entry in sitemap_analysis.discovered_urls], job.base_url
             )
-            
-            self.logger.info(f"Mapped {len(structure.nodes)} nodes with {len(structure.content_types)} content types")
-            
+
+            self.logger.info(
+                f"Mapped {len(structure.nodes)} nodes with {len(structure.content_types)} content types"
+            )
+
             # Step 3: Create intelligent crawling strategy based on structure
             strategy = self._create_enhanced_crawl_strategy(job, structure)
-            
+
             # Step 4: Execute enhanced crawling with our discovered URLs
             self.logger.info("Executing enhanced crawling with discovered URLs...")
-            
+
             crawler = IntelligentCrawler(
-                strategy=strategy,
-                progress_callback=self._log_crawl_progress
+                strategy=strategy, progress_callback=self._log_crawl_progress
             )
-            
+
             # Use our enhanced analysis results directly
             crawl_result = await crawler.crawl_documentation_site(
                 base_url=job.base_url,
                 sitemap_analysis=sitemap_analysis,  # Pass our enhanced analysis
-                structure=structure,                 # Pass our enhanced structure
-                custom_strategy=strategy            # Pass our enhanced strategy
+                structure=structure,  # Pass our enhanced structure
+                custom_strategy=strategy,  # Pass our enhanced strategy
             )
-            
-            self.logger.info(f"Enhanced crawling completed: {len(crawl_result.discovered_urls)} URLs discovered")
+
+            self.logger.info(
+                f"Enhanced crawling completed: {len(crawl_result.discovered_urls)} URLs discovered"
+            )
             return crawl_result
-            
+
         except Exception as e:
             self.logger.error(f"Enhanced discovery failed: {e}")
             return self._create_empty_crawl_result(f"Discovery failed: {e}")
@@ -254,13 +263,15 @@ class DocumentationManager:
             f"{progress_data.get('total_discovered', 0)} URLs processed"
         )
 
-    def _create_enhanced_crawl_strategy(self, job: DocumentationJob, structure) -> CrawlStrategy:
+    def _create_enhanced_crawl_strategy(
+        self, job: DocumentationJob, structure
+    ) -> CrawlStrategy:
         """Create enhanced crawling strategy based on structure analysis."""
-        
+
         # Determine strategy based on structure complexity
         total_nodes = len(structure.nodes)
         content_types = len(structure.content_types)
-        
+
         if total_nodes > 200 or content_types > 8:
             strategy_name = "aggressive"
             max_concurrent = 10
@@ -277,9 +288,11 @@ class DocumentationManager:
             strategy_name = "selective"
             max_concurrent = 3
             max_depth = 3
-        
-        self.logger.info(f"Selected {strategy_name} strategy: {max_concurrent} concurrent, depth {max_depth}")
-        
+
+        self.logger.info(
+            f"Selected {strategy_name} strategy: {max_concurrent} concurrent, depth {max_depth}"
+        )
+
         return CrawlStrategy(
             name=strategy_name,
             max_concurrent_requests=max_concurrent,
@@ -289,12 +302,12 @@ class DocumentationManager:
             importance_threshold=0.5,
             adaptive_depth=True,
             content_based_filtering=True,
-            relationship_tracking=True
+            relationship_tracking=True,
         )
 
     def _create_empty_crawl_result(self, error_message: str) -> CrawlResult:
         """Create an empty crawl result with error information."""
-        
+
         return CrawlResult(
             discovered_urls=set(),
             crawled_urls=set(),
@@ -310,11 +323,11 @@ class DocumentationManager:
                 "pages_per_minute": 0.0,
                 "completion_percentage": 0.0,
                 "strategy_used": "none",
-                "max_depth_reached": 0
+                "max_depth_reached": 0,
             },
             errors=[error_message],
             warnings=[],
-            success=False
+            success=False,
         )
 
     async def _extract_content(
@@ -418,26 +431,26 @@ class DocumentationManager:
             for chunk in result.chunks:
                 try:
                     embedding = await self.embedding_service.embed_text(chunk.content)
-                    
+
                     # Enhanced metadata for RAG optimization
                     enhanced_metadata = chunk.metadata.copy()
-                    
+
                     # Add structure metadata if available
-                    if hasattr(chunk, 'structure_metadata'):
+                    if hasattr(chunk, "structure_metadata"):
                         enhanced_metadata.update(chunk.structure_metadata)
-                    
+
                     # Add semantic metadata if available
-                    if hasattr(chunk, 'semantic_metadata'):
+                    if hasattr(chunk, "semantic_metadata"):
                         enhanced_metadata.update(chunk.semantic_metadata)
-                    
+
                     # Add coverage metadata if available
-                    if hasattr(chunk, 'coverage_metadata'):
+                    if hasattr(chunk, "coverage_metadata"):
                         enhanced_metadata.update(chunk.coverage_metadata)
-                    
+
                     # Ensure content type is set for proper collection selection
-                    if 'content_type' not in enhanced_metadata:
-                        enhanced_metadata['content_type'] = 'documents'
-                    
+                    if "content_type" not in enhanced_metadata:
+                        enhanced_metadata["content_type"] = "documents"
+
                     document_data = {
                         "content": chunk.content,
                         "metadata": enhanced_metadata,

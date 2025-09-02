@@ -1,8 +1,8 @@
 """Enhanced documentation ingestion system for comprehensive coverage."""
 
 from .documentation_manager import (
-    DocumentationManager,
     DocumentationJob,
+    DocumentationManager,
     DocumentationResult,
 )
 from .enhanced_documentation_processor import (
@@ -10,33 +10,27 @@ from .enhanced_documentation_processor import (
     EnhancedProcessingResult,
 )
 from .firecrawl_client import FirecrawlClient, ScrapedDocument
-from .sitemap_analyzer import SitemapAnalyzer, SitemapAnalysis, SitemapEntry
+from .intelligent_crawler import CrawlProgress
+from .intelligent_crawler import CrawlResult as IntelligentCrawlResult
+from .intelligent_crawler import CrawlStrategy, IntelligentCrawler
+from .sitemap_analyzer import SitemapAnalysis, SitemapAnalyzer, SitemapEntry
 from .structure_mapper import (
-    DocumentationStructureMapper,
-    DocumentationStructure,
     DocumentationNode,
-)
-from .intelligent_crawler import (
-    IntelligentCrawler,
-    CrawlStrategy,
-    CrawlProgress,
-    CrawlResult as IntelligentCrawlResult,
+    DocumentationStructure,
+    DocumentationStructureMapper,
 )
 
 __all__ = [
     # Core components
     "DocumentationManager",
-    "DocumentationJob", 
+    "DocumentationJob",
     "DocumentationResult",
-    
     # Enhanced processing
     "EnhancedDocumentationProcessor",
     "EnhancedProcessingResult",
-    
     # Content extraction
     "FirecrawlClient",
     "ScrapedDocument",
-    
     # Structure analysis
     "SitemapAnalyzer",
     "SitemapAnalysis",
@@ -44,7 +38,6 @@ __all__ = [
     "DocumentationStructureMapper",
     "DocumentationStructure",
     "DocumentationNode",
-    
     # Intelligent crawling
     "IntelligentCrawler",
     "CrawlStrategy",
