@@ -130,11 +130,7 @@ class UpdatePipeline:
                 self.logger.error(f"Failed to update vector store for {library}")
                 return False
             
-            # Update knowledge graph
-            graph_update_success = await self._update_knowledge_graph(library, version)
-            if not graph_update_success:
-                self.logger.error(f"Failed to update knowledge graph for {library}")
-                return False
+            # Note: Knowledge graph updates removed - focusing on vector store updates
             
             # Invalidate affected caches
             await self._invalidate_caches(library, version)
@@ -254,22 +250,7 @@ class UpdatePipeline:
             self.logger.error(f"Failed to update vector store for {library}: {e}")
             return False
     
-    async def _update_knowledge_graph(self, library: str, version: str) -> bool:
-        """Update knowledge graph with new relationships."""
-        try:
-            self.logger.info(f"Updating knowledge graph for {library} version {version}")
-            
-            # Mock implementation - in production this would update Neo4j
-            
-            # Simulate update time
-            await asyncio.sleep(0.1)
-            
-            self.logger.info(f"Successfully updated knowledge graph for {library}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Failed to update knowledge graph for {library}: {e}")
-            return False
+    # Note: Knowledge graph update method removed - focusing on vector store updates
     
     async def _invalidate_caches(self, library: str, version: str) -> bool:
         """Invalidate caches affected by the update."""

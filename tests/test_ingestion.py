@@ -150,24 +150,19 @@ class TestDocumentationIngestionPipeline:
         embedding_service.embed_text = AsyncMock(return_value=[0.1, 0.2, 0.3])
         embedding_service.health_check = AsyncMock(return_value=True)
         
-        knowledge_graph = Mock()
-        knowledge_graph.build_graph_from_documents = AsyncMock()
-        knowledge_graph.health_check = AsyncMock(return_value=True)
-        
         library_manager = Mock()
         library_manager.update_library_status = AsyncMock()
         
-        return vector_store, embedding_service, knowledge_graph, library_manager
+        return vector_store, embedding_service, library_manager
     
     @pytest.fixture
     def pipeline(self, mock_components):
         """Documentation ingestion pipeline instance."""
-        vector_store, embedding_service, knowledge_graph, library_manager = mock_components
+        vector_store, embedding_service, library_manager = mock_components
         
         return DocumentationIngestionPipeline(
             vector_store=vector_store,
             embedding_service=embedding_service,
-            knowledge_graph=knowledge_graph,
             library_manager=library_manager
         )
     
@@ -194,7 +189,6 @@ class TestDocumentationIngestionPipeline:
         
         assert "vector_store" in health_status
         assert "embedding_service" in health_status
-        assert "knowledge_graph" in health_status
         assert "firecrawl" in health_status
     
     @pytest.mark.asyncio
