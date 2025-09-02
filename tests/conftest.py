@@ -7,7 +7,7 @@ from unittest.mock import Mock, patch
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
-from pyrag.config import settings
+from pyrag.config import get_config
 from pyrag.models import Base
 from pyrag.database import get_session
 
@@ -37,13 +37,12 @@ def test_session(test_engine) -> Generator[Session, None, None]:
 @pytest.fixture
 def mock_settings():
     """Mock settings for testing."""
-    with patch("pyrag.config.settings") as mock:
+    with patch("pyrag.config.get_config") as mock:
         # Configure mock settings
-        mock.environment = "testing"
-        mock.database.url = "sqlite:///:memory:"
-        mock.vector_store.vector_store_type = "chroma"
-        mock.api.debug = True
-        mock.logging.level = "DEBUG"
+        mock.return_value.environment = "testing"
+        mock.return_value.vector_store.db_path = "./test_chroma_db"
+        mock.return_value.embedding.device = "cpu"
+        mock.return_value.log_level = "DEBUG"
         yield mock
 
 

@@ -187,7 +187,7 @@ class EnhancedSearchEngine:
             content_type = analysis.content_type_preference
         
         # Generate query embedding
-        query_embedding = await self.embedding_service.embed_query(query)
+        query_embedding = await self.embedding_service.generate_embeddings(query)
         
         # Multi-index search
         results = await self._multi_index_search(
@@ -230,18 +230,24 @@ class EnhancedSearchEngine:
                 # Build where clause for filtering
                 where_clause = None
                 if library:
-                    where_clause = {"library": library}
+                    # Ensure library is a string for proper filtering
+                    where_clause = {"library": str(library)}
                     if version:
-                        where_clause["version"] = version
+                        where_clause["version"] = str(version)
                 
                 # Search the collection
-                collection_results = await self.vector_store.search(
-                    query=query,
-                    collection_name=collection_name,
-                    n_results=max_results // len(collections),
-                    where=where_clause,
-                    embedding=query_embedding,
-                )
+                try:
+                    collection_results = await self.vector_store.search(
+                        query=query,
+                        collection_name=collection_name,
+                        n_results=max_results // len(collections),
+                        where=where_clause,
+                        embedding=query_embedding,
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Error searching collection {collection_name}: {e}")
+                    # Continue with other collections instead of failing completely
+                    continue
                 
                 # Add collection info to results
                 for result in collection_results:

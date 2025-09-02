@@ -151,6 +151,9 @@ scripts/
 tools/pipeline/
 tools/testing/
 
+# Documentation (development only)
+docs/
+
 # Development and testing artifacts
 *.db
 *.sqlite

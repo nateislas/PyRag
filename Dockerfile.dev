@@ -15,18 +15,14 @@ RUN apt-get update && apt-get install -y \
 # Set work directory
 WORKDIR /app
 
-# Install Python dependencies
+# Copy requirements and install Python dependencies
 COPY pyproject.toml ./
+COPY requirements.txt ./
 RUN pip install --upgrade pip && \
-    pip install -e .[dev]
+    pip install -r requirements.txt
 
 # Copy source code
 COPY . .
-
-# Create non-root user
-RUN groupadd -r pyrag && useradd -r -g pyrag pyrag
-RUN chown -R pyrag:pyrag /app
-USER pyrag
 
 # Expose port
 EXPOSE 8000

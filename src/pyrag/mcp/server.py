@@ -36,11 +36,29 @@ security_config = SecurityConfig()
 # Rate limiting storage
 rate_limit_store = defaultdict(lambda: deque(maxlen=1000))
 
+# Initialize PyRAG core system immediately
+_pyrag_instance = None
+
+def initialize_pyrag():
+    """Initialize PyRAG system immediately."""
+    global _pyrag_instance
+    if _pyrag_instance is None:
+        logger.info("Initializing PyRAG system for MCP server")
+        _pyrag_instance = PyRAG()
+        logger.info("PyRAG system initialized and ready")
+
+def get_pyrag() -> PyRAG:
+    """Get PyRAG instance (assumes it's already initialized)."""
+    global _pyrag_instance
+    if _pyrag_instance is None:
+        raise RuntimeError("PyRAG system not initialized. Call initialize_pyrag() first.")
+    return _pyrag_instance
+
 # Create FastMCP server instance
 mcp = FastMCP("PyRAG 🐍")
 
-# Initialize PyRAG core system
-pyrag = PyRAG()
+# Initialize PyRAG system immediately
+initialize_pyrag()
 
 def validate_api_key(api_key: str, timestamp: str, signature: str) -> bool:
     """Validate API key signature."""
@@ -179,7 +197,7 @@ async def search_python_docs(
                 mapped_content_type = "overview"
         
         # Search documentation
-        results = await pyrag.search_documentation(
+        results = await get_pyrag().search_documentation(
             query=query,
             library=library,
             version=version,
@@ -228,7 +246,7 @@ async def get_api_reference(
         await ctx.info(f"Getting API reference for {api_path} in {library}")
     
     try:
-        result = await pyrag.get_api_reference(
+        result = await get_pyrag().get_api_reference(
             library=library,
             api_path=api_path,
             include_examples=include_examples,
@@ -289,7 +307,7 @@ async def check_deprecation(
         await ctx.info(f"Checking deprecation status for {len(apis)} APIs in {library}")
     
     try:
-        result = await pyrag.check_deprecation(library=library, apis=apis)
+        result = await get_pyrag().check_deprecation(library=library, apis=apis)
         
         if not result['deprecated_apis']:
             return f"✅ All checked APIs in {library} are current and not deprecated."
@@ -334,7 +352,7 @@ async def find_similar_patterns(
             await ctx.info(f"Intent: {intent}")
     
     try:
-        results = await pyrag.find_similar_patterns(
+        results = await get_pyrag().find_similar_patterns(
             code_snippet=code_snippet,
             intent=intent,
         )
@@ -381,7 +399,7 @@ async def list_available_libraries(ctx: Context = None) -> str:
         await ctx.info("Listing available libraries")
     
     try:
-        libraries = await pyrag.list_libraries()
+        libraries = await get_pyrag().list_libraries()
         
         if not libraries:
             return "No libraries are currently indexed in the system."
@@ -427,7 +445,7 @@ async def get_library_status(
         await ctx.info(f"Getting status for library: {library_name}")
     
     try:
-        status = await pyrag.get_library_status(library_name)
+        status = await get_pyrag().get_library_status(library_name)
         
         if not status:
             return f"Library '{library_name}' not found in the system."
@@ -462,14 +480,27 @@ async def main():
     """Main entry point for the MCP server."""
     logger.info("Starting PyRAG MCP Server")
     
-    # Get network configuration from environment variables
-    host = os.getenv("MCP_HOST", "0.0.0.0")  # Bind to all interfaces by default
-    port = int(os.getenv("MCP_PORT", "8000"))  # Default MCP port
+    # Get transport configuration from environment variables
+    transport_type = os.getenv("MCP_TRANSPORT", "stdio").lower()
     
-    logger.info(f"Binding MCP server to {host}:{port}")
-    
-    # Run the server with network binding
-    await mcp.run(host=host, port=port)
+    if transport_type == "stdio":
+        logger.info("Starting MCP server in STDIO mode")
+        # Run the server in stdio mode (synchronous)
+        mcp.run(transport="stdio")
+    elif transport_type == "http":
+        logger.info("Starting MCP server in HTTP mode")
+        # Get network configuration from environment variables
+        host = os.getenv("MCP_HOST", "0.0.0.0")  # Bind to all interfaces by default
+        port = int(os.getenv("MCP_PORT", "8000"))  # Default MCP port
+        
+        logger.info(f"Binding MCP server to {host}:{port}")
+        
+        # Run the server with network binding
+        await mcp.run(host=host, port=port)
+    else:
+        logger.error(f"Unsupported transport type: {transport_type}")
+        logger.info("Supported transport types: stdio, http")
+        sys.exit(1)
 
 
 if __name__ == "__main__":
