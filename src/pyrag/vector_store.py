@@ -33,6 +33,15 @@ class VectorStore:
             ),
         )
 
+        # Initialize embedding service once (shared instance)
+        try:
+            from .embeddings import EmbeddingService
+            self.embedding_service = EmbeddingService()
+            self.logger.info("Embedding service initialized successfully")
+        except Exception as e:
+            self.logger.warning(f"Failed to initialize embedding service: {e}")
+            self.embedding_service = None
+
         # Get or create collections
         self._setup_collections()
 
@@ -308,23 +317,26 @@ class VectorStore:
         if embedding:
             search_kwargs["query_embeddings"] = [embedding]
         else:
-            # Generate query embedding using our embedding service for consistent behavior
-            try:
-                from .embeddings import EmbeddingService
-
-                query_embedding = EmbeddingService().generate_embeddings_sync(query)
-                # Ensure 1D list of floats
-                if hasattr(query_embedding, "tolist"):
-                    query_embedding = query_embedding.tolist()
-                if (
-                    isinstance(query_embedding, list)
-                    and len(query_embedding) > 0
-                    and isinstance(query_embedding[0], list)
-                ):
-                    query_embedding = query_embedding[0]
-                search_kwargs["query_embeddings"] = [query_embedding]
-            except Exception:
-                # Fallback to query_texts if embedding generation fails
+            # Generate query embedding using our shared embedding service instance
+            if self.embedding_service:
+                try:
+                    query_embedding = self.embedding_service.generate_embeddings_sync(query)
+                    # Ensure 1D list of floats
+                    if hasattr(query_embedding, "tolist"):
+                        query_embedding = query_embedding.tolist()
+                    if (
+                        isinstance(query_embedding, list)
+                        and len(query_embedding) > 0
+                        and isinstance(query_embedding[0], list)
+                    ):
+                        query_embedding = query_embedding[0]
+                    search_kwargs["query_embeddings"] = [query_embedding]
+                except Exception as e:
+                    self.logger.warning(f"Embedding generation failed: {e}")
+                    # Fallback to query_texts if embedding generation fails
+                    search_kwargs["query_texts"] = [query]
+            else:
+                # No embedding service available, use query_texts
                 search_kwargs["query_texts"] = [query]
 
         # Perform search
