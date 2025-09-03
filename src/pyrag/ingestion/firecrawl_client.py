@@ -74,28 +74,44 @@ class FirecrawlClient:
             "storeInCache": True,  # Store results for future use
         }
 
-        try:
-            logger.info(f"Scraping content from URL: {url}")
-            async with self.session.post(
-                f"{self.base_url}{self.scrape_endpoint}",
-                json=payload,
-                headers=self.headers,
-            ) as response:
-                if response.status == 200:
-                    data = await response.json()
-
-                    # Parse scrape API response format
-                    return self._parse_scrape_response(data, url)
-                else:
-                    error_text = await response.text()
-                    logger.error(
-                        f"Firecrawl API error: {response.status} - {error_text}"
-                    )
-                    raise Exception(f"Firecrawl API error: {response.status}")
-
-        except Exception as e:
-            logger.error(f"Error extracting content from {url}: {e}")
-            raise
+        # Retries with exponential backoff and jitter for resilience
+        max_attempts = 5
+        base_delay = 2.0
+        import random, asyncio
+        for attempt in range(1, max_attempts + 1):
+            try:
+                logger.info(f"Scraping content from URL: {url}")
+                async with self.session.post(
+                    f"{self.base_url}{self.scrape_endpoint}",
+                    json=payload,
+                    headers=self.headers,
+                ) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        return self._parse_scrape_response(data, url)
+                    else:
+                        error_text = await response.text()
+                        logger.error(
+                            f"Firecrawl API error: {response.status} - {error_text}"
+                        )
+                        # Handle 429 with small wait; Firecrawl returns a reset ETA in text
+                        if response.status in (429, 502, 503, 504):
+                            # Backoff with jitter
+                            delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                            # Cap delay to a reasonable bound
+                            delay = min(delay, 30.0)
+                            logger.info(f"Retrying {url} in {delay:.1f}s (attempt {attempt}/{max_attempts})")
+                            await asyncio.sleep(delay)
+                            continue
+                        raise Exception(f"Firecrawl API error: {response.status}")
+            except Exception as e:
+                if attempt >= max_attempts:
+                    logger.error(f"Error extracting content from {url} after {attempt} attempts: {e}")
+                    raise
+                delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+                delay = min(delay, 30.0)
+                logger.warning(f"Error scraping {url}: {e}. Retrying in {delay:.1f}s (attempt {attempt}/{max_attempts})")
+                await asyncio.sleep(delay)
 
     async def crawl_site(
         self, start_url: str, options: Optional[Dict[str, Any]] = None

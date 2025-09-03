@@ -1,8 +1,8 @@
 """Vector store integration for PyRAG."""
 
 import hashlib
-from typing import Any, Dict, List, Optional, Tuple
-
+from typing import Any, Dict, List, Optional
+import json
 import chromadb
 import numpy as np
 from chromadb.config import Settings
@@ -50,7 +50,9 @@ class VectorStore:
         self.api_reference_collection = self.client.get_or_create_collection(
             name="api_reference",
             metadata={
-                "description": "API reference documentation with class/function details"
+                "description": (
+                    "API reference documentation with class/function details"
+                )
             },
         )
 
@@ -113,7 +115,10 @@ class VectorStore:
     def _generate_id(self, content: str, metadata: Dict[str, Any]) -> str:
         """Generate a unique ID for a document chunk."""
         # Create a hash from content and key metadata
-        hash_input = f"{content}:{metadata.get('library', '')}:{metadata.get('version', '')}:{metadata.get('hierarchy_path', '')}"
+        hash_input = (
+            f"{content}:{metadata.get('library', '')}:"
+            f"{metadata.get('version', '')}:{metadata.get('hierarchy_path', '')}"
+        )
         return hashlib.md5(hash_input.encode()).hexdigest()
 
     def _prepare_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -124,56 +129,45 @@ class VectorStore:
             if value is None:
                 continue
             elif isinstance(value, list):
-                # Convert lists to JSON strings
-                import json
-
-                prepared[key] = json.dumps(value)
+                # Convert lists to JSON strings, handling non-serializable items
+                try:
+                    # First try to serialize as-is
+                    json.dumps(value)
+                    prepared[key] = value
+                except (TypeError, ValueError):
+                    # If serialization fails, convert non-serializable items to strings
+                    serializable_list = []
+                    for item in value:
+                        if (hasattr(item, '__dict__') and
+                                not isinstance(item, (dict, list, str, int, float, bool))):
+                            # Handle objects like ParameterInfo
+                            serializable_list.append(str(item))
+                        else:
+                            serializable_list.append(item)
+                    prepared[key] = json.dumps(serializable_list)
             elif isinstance(value, dict):
                 # Convert nested dictionaries to JSON strings for complex metadata
-                import json
-
-                prepared[key] = json.dumps(value)
+                try:
+                    # First try to serialize as-is
+                    json.dumps(value)
+                    prepared[key] = value
+                except (TypeError, ValueError):
+                    # If serialization fails, convert non-serializable values to strings
+                    serializable_dict = {}
+                    for k, v in value.items():
+                        if (hasattr(v, '__dict__') and
+                                not isinstance(v, (dict, list, str, int, float, bool))):
+                            serializable_dict[k] = str(v)
+                        else:
+                            serializable_dict[k] = v
+                    prepared[key] = json.dumps(serializable_dict)
+            elif (hasattr(value, '__dict__') and
+                  not isinstance(value, (str, int, float, bool))):
+                # Handle objects like ParameterInfo, convert to string representation
+                prepared[key] = str(value)
             else:
+                # Handle basic types (str, int, float, bool)
                 prepared[key] = value
-
-        # Ensure enhanced RAG metadata fields are present
-        enhanced_fields = [
-            "content_quality_score",
-            "semantic_topics",
-            "code_examples",
-            "api_signature",
-            "deprecated",
-            "complexity_level",
-            "last_updated",
-            "relationship_metadata",
-            "coverage_metadata",
-            "importance_score",
-            "completeness_score",
-        ]
-
-        for field in enhanced_fields:
-            if field not in prepared:
-                # Set default values for missing enhanced fields
-                if field in [
-                    "content_quality_score",
-                    "importance_score",
-                    "completeness_score",
-                ]:
-                    prepared[field] = 0.0
-                elif field in ["code_examples", "deprecated"]:
-                    prepared[field] = False
-                elif field in [
-                    "semantic_topics",
-                    "relationship_metadata",
-                    "coverage_metadata",
-                ]:
-                    prepared[field] = "[]"  # Empty JSON array
-                elif field == "complexity_level":
-                    prepared[field] = "intermediate"
-                elif field == "api_signature":
-                    prepared[field] = ""
-                elif field == "last_updated":
-                    prepared[field] = ""
 
         return prepared
 
@@ -212,7 +206,9 @@ class VectorStore:
         # If no specific collection is specified, use intelligent selection
         if collection_name == "documents":
             # Group documents by content type for optimal storage
-            documents_by_type = self._group_documents_by_content_type(documents)
+            documents_by_type = (
+                self._group_documents_by_content_type(documents)
+            )
 
             all_ids = []
             for content_type, type_docs in documents_by_type.items():

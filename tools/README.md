@@ -8,7 +8,6 @@ This directory contains development and operational tools for PyRAG.
 Production-ready scripts for running PyRAG pipelines:
 - `automated_library_ingestion.py` - Batch processing of multiple libraries
 - `check_current_state.py` - System state monitoring and verification
-- `setup_qodo_embeddings.py` - Qodo embedding model setup and configuration
 
 ### `testing/` - Testing and Validation Scripts
 Development and testing scripts for validating PyRAG functionality:
@@ -16,7 +15,7 @@ Development and testing scripts for validating PyRAG functionality:
 - `test_enhanced_integration.py` - Enhanced processing pipeline testing
 - `test_enhanced_processing.py` - Individual processing component testing
 - `test_rag_evaluation.py` - RAG quality evaluation system testing
-- `test_qodo_embeddings.py` - Qodo embedding model testing
+
 
 ## Usage
 
@@ -28,8 +27,9 @@ python tools/pipeline/automated_library_ingestion.py
 # Check system state
 python tools/pipeline/check_current_state.py
 
-# Setup Qodo embeddings
-python tools/pipeline/setup_qodo_embeddings.py
+# Embedding model
+# Default: sentence-transformers/all-MiniLM-L6-v2 (384-dim, fast)
+# Override via env var EMBEDDING_MODEL if needed
 ```
 
 ### Testing Scripts

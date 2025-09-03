@@ -180,16 +180,57 @@ class LLMClient:
             response = await self.client.chat.completions.create(
                 model=self.config.model,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=20,
+                max_tokens=50,
                 temperature=0.1,
             )
 
-            content_type = response.choices[0].message.content.strip().lower()
-            return content_type
+            content = response.choices[0].message.content.strip().lower()
+            
+            # Map common variations to standard types
+            if "api" in content or "reference" in content:
+                return "api_reference"
+            elif "tutorial" in content or "guide" in content or "how-to" in content:
+                return "tutorial"
+            elif "example" in content or "sample" in content or "demo" in content:
+                return "examples"
+            elif "overview" in content or "introduction" in content or "getting started" in content:
+                return "overview"
+            else:
+                return "guide"
 
         except Exception as e:
-            self.logger.warning(f"LLM content type analysis failed: {e}")
+            self.logger.warning(f"LLM content type analysis failed for {url}: {e}")
             return "overview"  # Default fallback
+
+    async def generate(self, prompt: str, max_tokens: Optional[int] = None, temperature: Optional[float] = None) -> str:
+        """Generic method for generating text responses from prompts.
+        
+        This is a simplified interface for components that need basic text generation
+        without the complexity of the full chat completions API.
+        
+        Args:
+            prompt: The text prompt to send to the LLM
+            max_tokens: Maximum tokens in response (defaults to config value)
+            temperature: Response randomness (defaults to config value)
+            
+        Returns:
+            The generated text response
+        """
+        try:
+            response = await self.client.chat.completions.create(
+                model=self.config.model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=max_tokens or self.config.max_tokens,
+                temperature=temperature or self.config.temperature,
+            )
+            
+            content = response.choices[0].message.content
+            self.logger.debug(f"Generated response: {content[:100]}...")
+            return content
+            
+        except Exception as e:
+            self.logger.error(f"LLM generation failed: {e}")
+            raise
 
     def _basic_filter_links(self, base_url: str, all_links: List[str]) -> List[str]:
         """Basic filtering fallback when LLM is unavailable."""

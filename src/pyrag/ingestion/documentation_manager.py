@@ -21,6 +21,7 @@ from .firecrawl_client import FirecrawlClient, ScrapedDocument
 from .intelligent_crawler import CrawlResult, CrawlStrategy, IntelligentCrawler
 from .sitemap_analyzer import SitemapAnalyzer
 from .structure_mapper import DocumentationStructureMapper
+from .metadata_sanitizer import MetadataSanitizer, sanitize_metadata
 
 logger = get_logger(__name__)
 
@@ -82,6 +83,10 @@ class DocumentationManager:
         self.logger.info(
             "Using enhanced documentation processor with semantic chunking"
         )
+
+        # Initialize metadata sanitizer for ChromaDB compatibility
+        self.metadata_sanitizer = MetadataSanitizer()
+        self.logger.info("Initialized metadata sanitizer for ChromaDB compatibility")
 
         # Create cache directory
         self.cache_dir.mkdir(exist_ok=True)
@@ -371,8 +376,11 @@ class DocumentationManager:
         failed_urls = []
         total_content_length = 0
 
-        # Limit number of pages to extract
-        urls_to_extract = list(urls)[: job.max_content_pages]
+        # Limit number of pages to extract (<=0 means no cap)
+        all_urls = list(urls)
+        urls_to_extract = (
+            all_urls if getattr(job, "max_content_pages", 0) <= 0 else all_urls[: job.max_content_pages]
+        )
 
         async with FirecrawlClient(api_key=self.firecrawl_api_key) as client:
             for i, url in enumerate(urls_to_extract, 1):
@@ -579,10 +587,19 @@ class DocumentationManager:
                     ):
                         embedding = embedding[0]
 
+                    # Sanitize metadata for ChromaDB compatibility
+                    sanitized_metadata = self.metadata_sanitizer.sanitize_metadata(metadata)
+                    
+                    # Log any metadata sanitization issues
+                    if sanitized_metadata != metadata:
+                        self.logger.info(f"Metadata sanitized for ChromaDB compatibility")
+                        sanitization_report = self.metadata_sanitizer.get_sanitization_report()
+                        self.logger.debug(f"Sanitization report: {sanitization_report}")
+
                     documents_payload.append(
                         {
                             "content": content,
-                            "metadata": metadata,
+                            "metadata": sanitized_metadata,
                             "embedding": embedding,
                         }
                     )

@@ -16,7 +16,7 @@ class LLMConfig:
 
     api_key: str
     base_url: str = "https://api.llama.com/compat/v1/"
-    model: str = "Llama-3.3-70B-Instruct"
+    model: str = "Llama-3.3-8B-Instruct"
     max_tokens: int = 4000
     temperature: float = 0.1
 

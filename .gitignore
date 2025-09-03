@@ -61,6 +61,10 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
+# Pipeline debug logs and reports
+tools/pipeline/logs/
+tools/pipeline/*_debug_report_*.json
+
 # Flask stuff:
 instance/
 .webassets-cache
@@ -231,3 +235,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# SSL certificates
+certs/
