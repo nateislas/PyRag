@@ -365,8 +365,15 @@ class SemanticChunker:
 
         {content}
 
-        Return only the return type (e.g., "str", "List[int]", "None", "Optional[Dict]")
-        If no return type is specified, return "Any".
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "return_type": "str|List[int]|None|Optional[Dict]|Any"
+        }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - If no return type is specified, use "Any"
+        - Common return types: "str", "List[int]", "None", "Optional[Dict]", "Any"
         """
 
         try:
@@ -375,9 +382,16 @@ class SemanticChunker:
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=50,
                 temperature=0.1,
+                response_format={"type": "json_object"},
             )
 
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            result = parse_llm_json_response(content)
+
+            if isinstance(result, dict) and "return_type" in result:
+                return result["return_type"]
+            else:
+                return "Any"
 
         except Exception as e:
             self.logger.warning(f"Return type extraction failed: {e}")
@@ -397,8 +411,16 @@ class SemanticChunker:
 
         {content}
 
-        Return a JSON array of code examples as strings.
-        Include only complete, runnable code examples.
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "examples": ["example1", "example2"]
+        }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - Include only complete, runnable code examples
+        - If no examples found, return: {{"examples": []}}
+        - Each example should be a complete code snippet
         """
 
         try:
@@ -414,10 +436,16 @@ class SemanticChunker:
             result = parse_llm_json_response(content)
 
             if isinstance(result, dict) and "examples" in result:
-                return result["examples"]
+                examples = result["examples"]
+                if isinstance(examples, list):
+                    return examples
+                else:
+                    self.logger.warning(f"Examples field is not a list: {type(examples)}")
+                    return []
             elif isinstance(result, list):
                 return result
             else:
+                self.logger.warning(f"Unexpected examples response format: {result}")
                 return []
 
         except Exception as e:

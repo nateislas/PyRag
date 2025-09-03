@@ -209,12 +209,12 @@ class EnhancedDocumentationProcessor:
                 "semantic_boundaries": enhanced_chunk.semantic_chunk.semantic_boundaries,
                 "importance_score": enhanced_chunk.semantic_chunk.importance_score,
                 "relationships": enhanced_chunk.semantic_chunk.relationships,
-                # API-specific metadata from semantic chunk
-                "api_path": enhanced_chunk.semantic_chunk.api_path,
-                "function_signature": enhanced_chunk.semantic_chunk.function_signature,
-                "parameters": enhanced_chunk.semantic_chunk.parameters,
-                "return_type": enhanced_chunk.semantic_chunk.return_type,
-                "examples": enhanced_chunk.semantic_chunk.examples,
+                # API-specific metadata from enhanced metadata
+                "api_path": enhanced_chunk.enhanced_metadata.api_path,
+                "function_signature": enhanced_chunk.enhanced_metadata.function_signature,
+                "parameters": enhanced_chunk.enhanced_metadata.parameters,
+                "return_type": enhanced_chunk.enhanced_metadata.return_type,
+                "examples": enhanced_chunk.enhanced_metadata.examples,
                 # Content processing metadata
                 "context_window": enhanced_chunk.semantic_chunk.context_window,
             }
@@ -256,12 +256,12 @@ class EnhancedDocumentationProcessor:
                 metadata["chunk_types"].get(chunk_type, 0) + 1
             )
 
-            # Collect API information
-            if chunk.semantic_chunk.api_path:
-                metadata["api_paths"].append(chunk.semantic_chunk.api_path)
-            if chunk.semantic_chunk.function_signature:
+            # Collect API information from enhanced metadata
+            if chunk.enhanced_metadata.api_path:
+                metadata["api_paths"].append(chunk.enhanced_metadata.api_path)
+            if chunk.enhanced_metadata.function_signature:
                 metadata["function_signatures"].append(
-                    chunk.semantic_chunk.function_signature
+                    chunk.enhanced_metadata.function_signature
                 )
             if chunk.enhanced_metadata.parameters:
                 metadata["parameters"].extend(chunk.enhanced_metadata.parameters)
@@ -269,10 +269,12 @@ class EnhancedDocumentationProcessor:
                 metadata["return_types"].append(chunk.enhanced_metadata.return_type)
             if chunk.enhanced_metadata.examples:
                 metadata["examples"].extend(chunk.enhanced_metadata.examples)
+            
+            # Collect relationships from semantic chunk
             if chunk.semantic_chunk.relationships:
                 metadata["relationships"].extend(chunk.semantic_chunk.relationships)
 
-            # Sum importance scores
+            # Sum importance scores from semantic chunk
             total_importance += chunk.semantic_chunk.importance_score
 
         # Calculate average importance

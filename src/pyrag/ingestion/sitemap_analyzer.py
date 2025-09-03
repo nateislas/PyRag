@@ -19,7 +19,6 @@ logger = get_logger(__name__)
 @dataclass
 class SitemapEntry:
     """Represents a single sitemap entry."""
-
     url: str
     last_modified: Optional[str] = None
     change_frequency: Optional[str] = None
@@ -31,7 +30,6 @@ class SitemapEntry:
 @dataclass
 class SitemapAnalysis:
     """Result of sitemap analysis."""
-
     base_url: str
     sitemap_urls: List[str]
     discovered_urls: List[SitemapEntry]
@@ -171,7 +169,7 @@ class SitemapAnalyzer:
 
         # Remove duplicates
         discovered_sitemaps = list(set(discovered_sitemaps))
-
+        
         # Expand sitemap indexes recursively
         expanded_sitemaps = []
         for sitemap_url in discovered_sitemaps:
@@ -184,19 +182,15 @@ class SitemapAnalyzer:
                             # This is a sitemap index, extract nested sitemaps
                             nested_sitemaps = self._extract_sitemap_index_urls(content)
                             expanded_sitemaps.extend(nested_sitemaps)
-                            self.logger.debug(
-                                f"Expanded sitemap index {sitemap_url} to {len(nested_sitemaps)} sitemaps"
-                            )
+                            self.logger.debug(f"Expanded sitemap index {sitemap_url} to {len(nested_sitemaps)} sitemaps")
                         else:
                             # This is a regular sitemap
                             expanded_sitemaps.append(sitemap_url)
             except Exception as e:
-                self.logger.debug(
-                    f"Failed to check sitemap type for {sitemap_url}: {e}"
-                )
+                self.logger.debug(f"Failed to check sitemap type for {sitemap_url}: {e}")
                 # Assume it's a regular sitemap if we can't determine
                 expanded_sitemaps.append(sitemap_url)
-
+        
         return expanded_sitemaps
 
     async def _check_url_exists(self, url: str) -> bool:
@@ -241,7 +235,7 @@ class SitemapAnalyzer:
                 if response.status == 200:
                     content = await response.text()
                     soup = BeautifulSoup(content, "html.parser")
-
+                    
                     sitemaps = []
                     # Look for sitemap links in head
                     for link in soup.find_all("link", rel="sitemap"):
@@ -249,14 +243,14 @@ class SitemapAnalyzer:
                         if href:
                             sitemap_url = urljoin(base_url, href)
                             sitemaps.append(sitemap_url)
-
+                    
                     # Also check for sitemap meta tags
                     for meta in soup.find_all("meta", attrs={"name": "sitemap"}):
                         content = meta.get("content")
                         if content:
                             sitemap_url = urljoin(base_url, content)
                             sitemaps.append(sitemap_url)
-
+                    
                     return sitemaps
         except Exception as e:
             self.logger.debug(f"Failed to parse HTML at {base_url}: {e}")
@@ -278,15 +272,13 @@ class SitemapAnalyzer:
 
         return []
 
-    def _parse_sitemap_xml(
-        self, xml_content: str, sitemap_url: str
-    ) -> List[SitemapEntry]:
+    def _parse_sitemap_xml(self, xml_content: str, sitemap_url: str) -> List[SitemapEntry]:
         """Parse XML content and extract sitemap entries."""
         entries = []
 
         try:
             root = ET.fromstring(xml_content)
-
+            
             # Handle both sitemap index and regular sitemaps
             if "sitemapindex" in root.tag:
                 # This is a sitemap index
@@ -313,26 +305,24 @@ class SitemapAnalyzer:
     def _extract_sitemap_index_urls(self, xml_content: str) -> List[str]:
         """Extract sitemap URLs from a sitemap index."""
         sitemap_urls = []
-
+        
         try:
             root = ET.fromstring(xml_content)
-
+            
             # Look for sitemap elements in sitemap index
             for sitemap in root.findall(".//{*}sitemap"):
                 loc = sitemap.find("{*}loc")
                 if loc is not None and loc.text:
                     sitemap_urls.append(loc.text.strip())
-
+                    
         except ET.ParseError as e:
             self.logger.error(f"Failed to parse sitemap index XML: {e}")
         except Exception as e:
             self.logger.error(f"Unexpected error parsing sitemap index: {e}")
-
+        
         return sitemap_urls
 
-    def _extract_sitemap_entry(
-        self, url_elem, sitemap_url: str
-    ) -> Optional[SitemapEntry]:
+    def _extract_sitemap_entry(self, url_elem, sitemap_url: str) -> Optional[SitemapEntry]:
         """Extract a single sitemap entry from XML."""
         try:
             loc = url_elem.find("{*}loc")
@@ -340,7 +330,7 @@ class SitemapAnalyzer:
                 return None
 
             url = loc.text.strip()
-
+            
             # Extract optional fields
             last_modified = None
             lastmod_elem = url_elem.find("{*}lastmod")
@@ -392,7 +382,7 @@ class SitemapAnalyzer:
 
         for entry in entries:
             entry_domain = urlparse(entry.url).netloc
-
+            
             # Include if same domain or subdomain
             if entry_domain == base_domain or entry_domain.endswith(f".{base_domain}"):
                 # Check if it looks like documentation
@@ -404,28 +394,14 @@ class SitemapAnalyzer:
     def _is_documentation_url(self, url: str) -> bool:
         """Check if a URL appears to be documentation content."""
         url_lower = url.lower()
-
+        
         # Exclude common non-documentation patterns
         exclude_patterns = [
-            "blog",
-            "news",
-            "changelog",
-            "download",
-            "github.com",
-            "twitter.com",
-            "linkedin.com",
-            "facebook.com",
-            "youtube.com",
-            "discord.com",
-            "mailto:",
-            "javascript:",
-            "tel:",
-            "#",
-            ".pdf",
-            ".zip",
-            ".tar.gz",
+            "blog", "news", "changelog", "download", "github.com", "twitter.com",
+            "linkedin.com", "facebook.com", "youtube.com", "discord.com",
+            "mailto:", "javascript:", "tel:", "#", ".pdf", ".zip", ".tar.gz"
         ]
-
+        
         for pattern in exclude_patterns:
             if pattern in url_lower:
                 return False
@@ -443,9 +419,7 @@ class SitemapAnalyzer:
 
         return False
 
-    def _classify_urls(
-        self, entries: List[SitemapEntry]
-    ) -> Dict[str, List[SitemapEntry]]:
+    def _classify_urls(self, entries: List[SitemapEntry]) -> Dict[str, List[SitemapEntry]]:
         """Classify URLs by their content type."""
         classified = {
             "api": [],
@@ -480,32 +454,21 @@ class SitemapAnalyzer:
         """Analyze the documentation structure and provide insights."""
         insights = {
             "total_pages": sum(len(entries) for entries in classified_entries.values()),
-            "by_type": {
-                doc_type: len(entries)
-                for doc_type, entries in classified_entries.items()
-            },
-            "depth_analysis": self._analyze_depth_distribution(
-                classified_entries, base_url
-            ),
+            "by_type": {doc_type: len(entries) for doc_type, entries in classified_entries.items()},
+            "depth_analysis": self._analyze_depth_distribution(classified_entries, base_url),
             "coverage_gaps": self._identify_coverage_gaps(classified_entries, base_url),
             "recommendations": [],
         }
 
         # Generate recommendations
         if insights["by_type"]["api"] < 10:
-            insights["recommendations"].append(
-                "Low API documentation coverage - consider manual review"
-            )
-
+            insights["recommendations"].append("Low API documentation coverage - consider manual review")
+        
         if insights["by_type"]["tutorial"] < 5:
-            insights["recommendations"].append(
-                "Limited tutorial content - may need additional discovery"
-            )
-
+            insights["recommendations"].append("Limited tutorial content - may need additional discovery")
+        
         if insights["by_type"]["example"] < 3:
-            insights["recommendations"].append(
-                "Few examples found - consider manual example discovery"
-            )
+            insights["recommendations"].append("Few examples found - consider manual example discovery")
 
         return insights
 
@@ -514,12 +477,12 @@ class SitemapAnalyzer:
     ) -> Dict[str, int]:
         """Analyze the depth distribution of documentation URLs."""
         depth_counts = {"shallow": 0, "medium": 0, "deep": 0}
-
+        
         for entries in classified_entries.values():
             for entry in entries:
                 parsed = urlparse(entry.url)
                 path_parts = [p for p in parsed.path.split("/") if p]
-
+                
                 if len(path_parts) <= 2:
                     depth_counts["shallow"] += 1
                 elif len(path_parts) <= 4:
@@ -534,31 +497,24 @@ class SitemapAnalyzer:
     ) -> List[str]:
         """Identify potential coverage gaps in the documentation."""
         gaps = []
-
+        
         # Check for missing common documentation sections
         if not classified_entries["api"]:
             gaps.append("No API reference documentation found")
-
+        
         if not classified_entries["tutorial"]:
             gaps.append("No tutorial or getting started content found")
-
+        
         if not classified_entries["example"]:
             gaps.append("No code examples found")
-
+        
         # Check depth distribution
         depth_analysis = self._analyze_depth_distribution(classified_entries, base_url)
         if depth_analysis["deep"] == 0:
-            gaps.append(
-                "No deep documentation content found - may be missing detailed guides"
-            )
-
-        if (
-            depth_analysis["shallow"]
-            > depth_analysis["medium"] + depth_analysis["deep"]
-        ):
-            gaps.append(
-                "Heavy concentration of shallow content - may be missing detailed documentation"
-            )
+            gaps.append("No deep documentation content found - may be missing detailed guides")
+        
+        if depth_analysis["shallow"] > depth_analysis["medium"] + depth_analysis["deep"]:
+            gaps.append("Heavy concentration of shallow content - may be missing detailed documentation")
 
         return gaps
 
@@ -567,28 +523,28 @@ class SitemapAnalyzer:
     ) -> float:
         """Estimate the documentation coverage based on discovered content."""
         total_pages = sum(len(entries) for entries in classified_entries.values())
-
+        
         if total_pages == 0:
             return 0.0
-
+        
         # Weight different content types
         weights = {
-            "api": 0.4,  # API docs are most important
+            "api": 0.4,      # API docs are most important
             "tutorial": 0.3,  # Tutorials provide context
-            "example": 0.2,  # Examples show usage
+            "example": 0.2,   # Examples show usage
             "documentation": 0.1,  # General docs
-            "other": 0.05,  # Other content
+            "other": 0.05,    # Other content
         }
-
+        
         weighted_score = 0.0
         for doc_type, entries in classified_entries.items():
             weight = weights.get(doc_type, 0.05)
             weighted_score += len(entries) * weight
-
+        
         # Normalize to 0-1 range (assuming 100+ pages is comprehensive)
         max_expected = 100
         coverage = min(weighted_score / max_expected, 1.0)
-
+        
         return coverage
 
     async def get_crawl_recommendations(
@@ -614,14 +570,10 @@ class SitemapAnalyzer:
 
         # Prioritize URLs by type
         if analysis.api_urls:
-            recommendations["priority_urls"].extend(
-                [url.url for url in analysis.api_urls[:20]]
-            )
-
+            recommendations["priority_urls"].extend([url.url for url in analysis.api_urls[:20]])
+        
         if analysis.tutorial_urls:
-            recommendations["priority_urls"].extend(
-                [url.url for url in analysis.tutorial_urls[:10]]
-            )
+            recommendations["priority_urls"].extend([url.url for url in analysis.tutorial_urls[:10]])
 
         # Set depth limits based on structure
         depth_analysis = analysis.structure_insights["depth_analysis"]
@@ -635,25 +587,17 @@ class SitemapAnalyzer:
         # Estimate duration (rough calculation)
         total_pages = analysis.total_urls
         if recommendations["crawl_strategy"] == "aggressive":
-            recommendations["estimated_duration"] = (
-                total_pages * 2
-            )  # 2 seconds per page
+            recommendations["estimated_duration"] = total_pages * 2  # 2 seconds per page
         elif recommendations["crawl_strategy"] == "balanced":
-            recommendations["estimated_duration"] = (
-                total_pages * 3
-            )  # 3 seconds per page
+            recommendations["estimated_duration"] = total_pages * 3  # 3 seconds per page
         else:
-            recommendations["estimated_duration"] = (
-                total_pages * 5
-            )  # 5 seconds per page
+            recommendations["estimated_duration"] = total_pages * 5  # 5 seconds per page
 
         # Resource requirements
         recommendations["resource_requirements"] = {
-            "concurrent_requests": 10
-            if recommendations["crawl_strategy"] == "aggressive"
-            else 5,
+            "concurrent_requests": 10 if recommendations["crawl_strategy"] == "aggressive" else 5,
             "memory_usage_mb": total_pages * 0.5,  # Rough estimate
-            "storage_gb": total_pages * 0.001,  # Rough estimate
+            "storage_gb": total_pages * 0.001,     # Rough estimate
         }
 
         return recommendations

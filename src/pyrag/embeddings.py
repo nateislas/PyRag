@@ -1,4 +1,7 @@
-"""Embedding service for generating text embeddings using the Qodo model with INT4 quantization."""
+"""Embedding service for generating text embeddings.
+
+Default model: sentence-transformers/all-MiniLM-L6-v2 (384 dims, fast).
+"""
 
 import asyncio
 from pathlib import Path
@@ -7,6 +10,7 @@ from typing import List, Union
 import numpy as np
 import torch
 from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer
 
 from pyrag.config import get_config
 from pyrag.logging import get_logger
@@ -15,10 +19,10 @@ logger = get_logger(__name__)
 
 
 class EmbeddingService:
-    """Service for generating text embeddings using the Qodo model with INT4 quantization."""
+    """Service for generating text embeddings using SentenceTransformers."""
 
     def __init__(self, config=None):
-        """Initialize the embedding service with the Qodo model.
+        """Initialize the embedding service with SentenceTransformers model.
 
         Args:
             config: Optional configuration object, uses default if not provided
@@ -27,7 +31,8 @@ class EmbeddingService:
             config = get_config()
 
         self.config = config.embedding
-        self.model_name = "Qodo/Qodo-Embed-1-1.5B"  # Original model
+        # Fast, 384-dim model
+        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
         self.model = None
         self.logger = logger
 
@@ -37,6 +42,12 @@ class EmbeddingService:
 
         # Initialize model
         self._load_model()
+        
+        # Initialize tokenizer for token-aware truncation/logging
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
+        except Exception:
+            self.tokenizer = None
 
     def _quantize_model_int4(self, model_path: str) -> str:
         """Quantize the model to INT4 precision using torch.quantization."""
@@ -129,7 +140,7 @@ class EmbeddingService:
                     return
 
             # Load original model
-            self.logger.info(f"Loading original Qodo model: {self.model_name}")
+            self.logger.info(f"Loading embedding model: {self.model_name}")
             self.model = SentenceTransformer(self.model_name)
 
             # Apply quantization if enabled and compatible
@@ -155,7 +166,7 @@ class EmbeddingService:
             # Move to target device
             self.model = self.model.to(device)
 
-            self.logger.info(f"Successfully loaded Qodo model on {device}")
+            self.logger.info(f"Successfully loaded embedding model on {device}")
             if enable_quantization and device != "mps":
                 self.logger.info("Model optimized with quantization")
             self.logger.info(
@@ -163,11 +174,11 @@ class EmbeddingService:
             )
 
         except Exception as e:
-            self.logger.error(f"Failed to load Qodo model: {e}")
+            self.logger.error(f"Failed to load embedding model: {e}")
             raise
 
     def _get_embeddings(self, texts: List[str]) -> np.ndarray:
-        """Generate embeddings for a list of texts using the Qodo model.
+        """Generate embeddings for a list of texts using the embedding model.
 
         Args:
             texts: List of text strings to embed
@@ -176,10 +187,43 @@ class EmbeddingService:
             numpy array of embeddings with shape (len(texts), embedding_dim)
         """
         try:
+            # Optionally pre-truncate to avoid silent tail loss and log
+            if self.tokenizer is not None and isinstance(texts, list):
+                prepared_texts = []
+                over_limit_count = 0
+                for text in texts:
+                    enc = self.tokenizer(
+                        text,
+                        truncation=True,
+                        max_length=self.config.max_length,
+                        return_tensors=None,
+                        add_special_tokens=True,
+                    )
+                    # If tokenizer returns dict with 'input_ids'
+                    input_ids = enc["input_ids"] if isinstance(enc, dict) else enc
+                    if isinstance(input_ids, list) and len(input_ids) > self.config.max_length:
+                        over_limit_count += 1
+                    # Decode to plain text so downstream normalization remains consistent
+                    if isinstance(enc, dict):
+                        truncated_text = self.tokenizer.decode(
+                            enc["input_ids"], skip_special_tokens=True
+                        )
+                    else:
+                        truncated_text = text  # Fallback
+                    prepared_texts.append(truncated_text)
+
+                if over_limit_count > 0:
+                    self.logger.debug(
+                        f"Token truncation applied to {over_limit_count} item(s) (max_length={self.config.max_length})"
+                    )
+                texts_to_encode = prepared_texts
+            else:
+                texts_to_encode = texts
+
             # Generate embeddings using Sentence Transformers
             # The model automatically handles batching and normalization
             embeddings = self.model.encode(
-                texts,
+                texts_to_encode,
                 batch_size=self.config.batch_size,
                 max_length=self.config.max_length,
                 normalize_embeddings=self.config.normalize_embeddings,
@@ -225,16 +269,16 @@ class EmbeddingService:
         return self._get_embeddings(texts)
 
     def get_embedding_dimension(self) -> int:
-        """Get the dimension of the embeddings.
-
-        Returns:
-            Embedding dimension (1536 for Qodo-Embed-1-1.5B)
-        """
+        """Get the dimension of the embeddings (model-specific)."""
         if self.model is None:
             raise RuntimeError("Model not loaded")
 
-        # Qodo-Embed-1-1.5B has 1536 dimensions
-        return 1536
+        try:
+            return int(self.model.get_sentence_embedding_dimension())
+        except Exception:
+            # Fallback for models without the helper
+            test = self.generate_embeddings_sync("test-dim")
+            return int(test.shape[-1])
 
     def is_ready(self) -> bool:
         """Check if the embedding service is ready.

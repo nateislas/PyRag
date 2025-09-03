@@ -265,7 +265,7 @@ class ContentTypeProcessor:
 
         {code}
 
-        Return a JSON object with:
+        You MUST return a valid JSON object with this EXACT structure:
         {{
             "functions": ["function1", "function2"],
             "classes": ["class1", "class2"],
@@ -273,6 +273,11 @@ class ContentTypeProcessor:
             "variables": ["var1", "var2"],
             "comments": ["comment1", "comment2"]
         }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - If no elements found in a category, use empty array: []
+        - Ensure all field names match exactly
         """
 
         try:
@@ -287,7 +292,22 @@ class ContentTypeProcessor:
             content = response.choices[0].message.content
             result = parse_llm_json_response(content)
 
-            return result
+            # Validate result structure
+            if isinstance(result, dict):
+                required_fields = ["functions", "classes", "imports", "variables", "comments"]
+                for field in required_fields:
+                    if field not in result or not isinstance(result[field], list):
+                        result[field] = []
+                return result
+            else:
+                self.logger.warning(f"Unexpected code elements response format: {result}")
+                return {
+                    "functions": [],
+                    "classes": [],
+                    "imports": [],
+                    "variables": [],
+                    "comments": [],
+                }
 
         except Exception as e:
             self.logger.warning(f"Code element extraction failed: {e}")
@@ -672,7 +692,16 @@ class ContentTypeProcessor:
 
         {content}
 
-        Return a JSON array of prerequisite descriptions.
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "prerequisites": ["prerequisite1", "prerequisite2"]
+        }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - Include only essential prerequisites needed to understand this step
+        - If no prerequisites found, return: {{"prerequisites": []}}
+        - Each prerequisite should be a clear, actionable requirement
         """
 
         try:
@@ -688,10 +717,16 @@ class ContentTypeProcessor:
             result = parse_llm_json_response(content)
 
             if isinstance(result, dict) and "prerequisites" in result:
-                return result["prerequisites"]
+                prerequisites = result["prerequisites"]
+                if isinstance(prerequisites, list):
+                    return prerequisites
+                else:
+                    self.logger.warning(f"Tutorial prerequisites field is not a list: {type(prerequisites)}")
+                    return []
             elif isinstance(result, list):
                 return result
             else:
+                self.logger.warning(f"Unexpected tutorial prerequisites response format: {result}")
                 return []
 
         except Exception as e:

@@ -155,7 +155,8 @@ class EnhancedDocumentProcessor:
                         example
                     )
                     example_chunks.append(example_chunk)
-                content_processing["example_chunks"] = example_chunks
+                # Use the first example chunk as the primary example_chunk
+                content_processing["example_chunk"] = example_chunks[0] if example_chunks else None
 
         elif semantic_chunk.chunk_type == "class":
             # Process as API documentation

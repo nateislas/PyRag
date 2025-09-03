@@ -44,6 +44,7 @@ class FirecrawlClient:
 
         # API endpoints - using the correct Firecrawl API
         self.extract_endpoint = "/v2/extract"
+        self.scrape_endpoint = "/v2/scrape"  # Add scrape endpoint for caching support
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -58,46 +59,33 @@ class FirecrawlClient:
     async def scrape_url(
         self, url: str, options: Optional[Dict[str, Any]] = None
     ) -> ScrapedDocument:
-        """Scrape a single URL using Firecrawl extract API."""
+        """Scrape a single URL using Firecrawl scrape API with caching support."""
         if not self.session:
             raise RuntimeError("Client not initialized. Use async context manager.")
 
-        # Create a schema for extracting documentation content
-        schema = {
-            "type": "object",
-            "properties": {
-                "title": {"type": "string"},
-                "content": {"type": "string"},
-                "markdown": {"type": "string"},
-                "html": {"type": "string"},
-                "links": {"type": "array", "items": {"type": "string"}},
-                "images": {"type": "array", "items": {"type": "string"}},
-            },
-            "required": ["title", "content"],
+        # Use scrape API for better caching support
+        # Default to 1 day cache for documentation (86400000 ms)
+        max_age = options.get("maxAge", 86400000) if options else 86400000
+        
+        payload = {
+            "url": url,
+            "formats": ["markdown", "html"],
+            "maxAge": max_age,  # Use cached data if less than 1 day old
+            "storeInCache": True  # Store results for future use
         }
 
-        # Create prompt for documentation extraction
-        prompt = f"Extract the documentation content from this page. Include the page title, main content as plain text, content as markdown, raw HTML for link extraction, and any relevant links and images."
-
-        payload = {"urls": [url], "prompt": prompt, "schema": schema}
-
         try:
-            logger.info(f"Extracting content from URL: {url}")
+            logger.info(f"Scraping content from URL: {url}")
             async with self.session.post(
-                f"{self.base_url}{self.extract_endpoint}",
+                f"{self.base_url}{self.scrape_endpoint}",
                 json=payload,
                 headers=self.headers,
             ) as response:
                 if response.status == 200:
                     data = await response.json()
-
-                    # Check if we got a job ID (async response)
-                    if "id" in data:
-                        logger.info(f"Got job ID: {data['id']}, polling for results...")
-                        return await self._poll_job_status(data["id"], url)
-                    else:
-                        # Direct response
-                        return self._parse_extract_response(data, url)
+                    
+                    # Parse scrape API response format
+                    return self._parse_scrape_response(data, url)
                 else:
                     error_text = await response.text()
                     logger.error(
@@ -310,6 +298,65 @@ class FirecrawlClient:
         raise Exception(
             f"Job {job_id} did not complete within {max_attempts * delay} seconds"
         )
+
+    def _parse_scrape_response(self, data: Dict[str, Any], url: str) -> ScrapedDocument:
+        """Parse Firecrawl scrape API response format."""
+        try:
+            # Handle scrape API response format
+            if "data" in data:
+                scraped_data = data["data"]
+            else:
+                scraped_data = data
+
+            # Extract content from the response
+            title = scraped_data.get("title", "")
+            content = scraped_data.get("text", "") or scraped_data.get("content", "")
+            markdown = scraped_data.get("markdown", "")
+            
+            # Extract links and images from HTML if available
+            links = []
+            images = []
+            if "html" in scraped_data:
+                # Simple HTML parsing for links and images
+                html_content = scraped_data["html"]
+                # Extract links (basic regex for href attributes)
+                import re
+                link_matches = re.findall(r'href=["\']([^"\']+)["\']', html_content)
+                links = [link for link in link_matches if link.startswith('http')]
+                
+                # Extract images (basic regex for src attributes)
+                img_matches = re.findall(r'src=["\']([^"\']+)["\']', html_content)
+                images = [img for img in img_matches if img.startswith('http')]
+
+            return ScrapedDocument(
+                url=url,
+                title=title,
+                content=content,
+                markdown=markdown,
+                metadata={
+                    "links": links,
+                    "images": images,
+                    "metadata": scraped_data.get("metadata", {}),
+                    "cached": scraped_data.get("cached", False),  # Track if result was cached
+                },
+                screenshot_url=scraped_data.get("screenshot", None),
+            )
+
+        except Exception as e:
+            logger.error(f"Error parsing scrape response: {e}")
+            # Return a minimal document on error
+            return ScrapedDocument(
+                url=url,
+                title="Error",
+                content=f"Failed to parse content: {e}",
+                markdown=f"# Error\n\nFailed to parse content: {e}",
+                metadata={"error": str(e)},
+                screenshot_url=None,
+            )
+
+    def is_cached_result(self, document: ScrapedDocument) -> bool:
+        """Check if a document result was served from cache."""
+        return document.metadata.get("cached", False)
 
     async def health_check(self) -> bool:
         """Check if Firecrawl API is accessible."""

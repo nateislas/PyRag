@@ -47,7 +47,7 @@ def parse_llm_json_response(content: str):
 logger = get_logger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class ParameterInfo:
     """Information about a function parameter."""
 
@@ -178,8 +178,16 @@ class MetadataExtractor:
 
         {content}
 
-        Return a JSON array of exception names (e.g., ["ValueError", "TypeError", "KeyError"]).
-        Include only exceptions that are explicitly mentioned or commonly associated with this type of operation.
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "exceptions": ["ValueError", "TypeError", "KeyError"]
+        }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - Include only exceptions that are explicitly mentioned or commonly associated with this type of operation
+        - If no exceptions found, return: {{"exceptions": []}}
+        - Each exception should be a valid Python exception name
         """
 
         try:
@@ -195,10 +203,16 @@ class MetadataExtractor:
             result = parse_llm_json_response(content)
 
             if isinstance(result, dict) and "exceptions" in result:
-                return result["exceptions"]
+                exceptions = result["exceptions"]
+                if isinstance(exceptions, list):
+                    return exceptions
+                else:
+                    self.logger.warning(f"Exceptions field is not a list: {type(exceptions)}")
+                    return []
             elif isinstance(result, list):
                 return result
             else:
+                self.logger.warning(f"Unexpected exceptions response format: {result}")
                 return []
 
         except Exception as e:
@@ -225,18 +239,18 @@ class MetadataExtractor:
 
         {content[:500]}...
 
-        Classify as one of:
-        - "beginner": Basic concepts, simple examples, introductory content
-        - "intermediate": Moderate complexity, some advanced concepts
-        - "advanced": Complex topics, advanced patterns, expert-level content
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "complexity": "beginner|intermediate|advanced"
+        }}
 
-        Consider factors like:
-        - Technical depth
-        - Prerequisites needed
-        - Complexity of examples
-        - Target audience
-
-        Respond with only the classification.
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - Classify as one of:
+          - "beginner": Basic concepts, simple examples, introductory content
+          - "intermediate": Moderate complexity, some advanced concepts
+          - "advanced": Complex topics, advanced patterns, expert-level content
+        - Consider factors like technical depth, prerequisites needed, complexity of examples, target audience
         """
 
         try:
@@ -245,15 +259,18 @@ class MetadataExtractor:
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=20,
                 temperature=0.1,
+                response_format={"type": "json_object"},
             )
 
-            complexity = response.choices[0].message.content.strip().lower()
+            content = response.choices[0].message.content
+            result = parse_llm_json_response(content)
 
-            # Validate response
-            if complexity in ["beginner", "intermediate", "advanced"]:
-                return complexity
-            else:
-                return "intermediate"  # Default
+            if isinstance(result, dict) and "complexity" in result:
+                complexity = result["complexity"].strip().lower()
+                if complexity in ["beginner", "intermediate", "advanced"]:
+                    return complexity
+
+            return "intermediate"  # Default
 
         except Exception as e:
             self.logger.warning(f"Complexity determination failed: {e}")
@@ -326,8 +343,16 @@ class MetadataExtractor:
 
         {content}
 
-        Return a JSON array of dependency names (e.g., ["requests", "pandas", "numpy"]).
-        Include only external libraries that this code depends on.
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "dependencies": ["requests", "pandas", "numpy"]
+        }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - Include only external libraries that this code depends on
+        - If no dependencies found, return: {{"dependencies": []}}
+        - Each dependency should be a valid Python package name
         """
 
         try:
@@ -343,10 +368,16 @@ class MetadataExtractor:
             result = parse_llm_json_response(content)
 
             if isinstance(result, dict) and "dependencies" in result:
-                return result["dependencies"]
+                dependencies = result["dependencies"]
+                if isinstance(dependencies, list):
+                    return dependencies
+                else:
+                    self.logger.warning(f"Dependencies field is not a list: {type(dependencies)}")
+                    return []
             elif isinstance(result, list):
                 return result
             else:
+                self.logger.warning(f"Unexpected dependencies response format: {result}")
                 return []
 
         except Exception as e:
@@ -375,8 +406,16 @@ class MetadataExtractor:
 
         {content}
 
-        Return a JSON array of use case descriptions (e.g., ["Making HTTP requests", "Handling authentication", "Processing JSON data"]).
-        Focus on practical, real-world scenarios.
+        You MUST return a valid JSON object with this EXACT structure:
+        {{
+            "use_cases": ["Making HTTP requests", "Handling authentication", "Processing JSON data"]
+        }}
+
+        CRITICAL:
+        - Return ONLY valid JSON - no additional text, explanations, or markdown formatting
+        - Focus on practical, real-world scenarios
+        - If no use cases found, return: {{"use_cases": []}}
+        - Each use case should be a clear, descriptive string
         """
 
         try:
@@ -392,10 +431,16 @@ class MetadataExtractor:
             result = parse_llm_json_response(content)
 
             if isinstance(result, dict) and "use_cases" in result:
-                return result["use_cases"]
+                use_cases = result["use_cases"]
+                if isinstance(use_cases, list):
+                    return use_cases
+                else:
+                    self.logger.warning(f"Use cases field is not a list: {type(use_cases)}")
+                    return []
             elif isinstance(result, list):
                 return result
             else:
+                self.logger.warning(f"Unexpected use cases response format: {result}")
                 return []
 
         except Exception as e:
