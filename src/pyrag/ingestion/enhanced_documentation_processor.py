@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from ..llm.client import LLMClient
 from ..logging import get_logger
-from ..models.document import DocumentChunk
+from .document_chunk import DocumentChunk
 from .document_structure_analyzer import DocumentStructureAnalyzer, DocumentAnalysis
 
 logger = get_logger(__name__)
@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 class EnhancedProcessingResult:
     """Result of enhanced document processing."""
 
-    chunks: List[DocumentChunk]
+    chunks: List[DocumentChunk]  # Restored DocumentChunk structure
     metadata: Dict[str, Any]
     processing_stats: Dict[str, Any]
     enhanced_metadata: Dict[str, Any]  # Rich metadata from enhanced processing
@@ -151,40 +151,39 @@ class EnhancedDocumentationProcessor:
         document_chunks = []
 
         for i, raw_chunk in enumerate(raw_chunks):
-            # Create standardized metadata from document analysis
-            chunk_metadata = {
-                "library": library_name,
-                "version": version,
-                "source": "firecrawl",
-                "optimized_processing": True,
-                
-                # Document-level metadata (same for all chunks)
-                "document_type": document_analysis.document_type,
-                "main_topic": document_analysis.main_topic,
-                "key_concepts": document_analysis.key_concepts,
-                "api_entities": document_analysis.api_entities,
-                "code_examples": document_analysis.code_examples,
-                "prerequisites": document_analysis.prerequisites,
-                "related_topics": document_analysis.related_topics,
-                "difficulty_level": document_analysis.difficulty_level,
-                "search_keywords": document_analysis.search_keywords,
-                
-                # Chunk-specific metadata
-                "chunk_index": i,
-                "total_chunks": len(raw_chunks),
-                "chunk_content_type": raw_chunk.get("content_type", "text"),
-                "chunk_focus": raw_chunk.get("focus", "general"),
-                
-                # Basic metadata
-                "api_references": api_references,
-                "content_length": len(raw_chunk["content"]),
-                "has_code_blocks": document_analysis.has_code_blocks,
-            }
-
             # Create DocumentChunk with optimized metadata
             chunk = DocumentChunk(
-                content=raw_chunk["content"], 
-                metadata=chunk_metadata
+                content=raw_chunk["content"],
+                content_type=raw_chunk.get("content_type", "text"),
+                hierarchy_path=raw_chunk.get("hierarchy_path", ""),
+                hierarchy_level=raw_chunk.get("hierarchy_level", 0),
+                title=title,
+                source_url=url,
+                library_name=library_name,
+                version=version,
+                
+                # Enhanced metadata from document analysis
+                document_type=document_analysis.document_type,
+                main_topic=document_analysis.main_topic,
+                key_concepts=document_analysis.key_concepts,
+                api_entities=document_analysis.api_entities,
+                code_examples=document_analysis.code_examples,
+                prerequisites=document_analysis.prerequisites,
+                related_topics=document_analysis.related_topics,
+                difficulty_level=document_analysis.difficulty_level,
+                search_keywords=document_analysis.search_keywords,
+                has_code_blocks=document_analysis.has_code_blocks,
+                optimized_processing=True,
+                
+                # Additional metadata
+                additional_metadata={
+                    "chunk_index": i,
+                    "total_chunks": len(raw_chunks),
+                    "chunk_focus": raw_chunk.get("focus", "general"),
+                    "api_references": api_references,
+                    "content_length": len(raw_chunk["content"]),
+                    "source": "firecrawl",
+                }
             )
 
             document_chunks.append(chunk)

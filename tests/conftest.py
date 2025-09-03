@@ -1,82 +1,43 @@
-"""Pytest configuration and fixtures."""
-
-from typing import Generator
-from unittest.mock import Mock, patch
+"""Test configuration and fixtures for PyRag."""
 
 import pytest
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
-
-from pyrag.config import get_config
-from pyrag.database import get_session
-from pyrag.models import Base
-
-
-@pytest.fixture(scope="session")
-def test_engine():
-    """Create test database engine."""
-    # Use in-memory SQLite for testing
-    engine = create_engine("sqlite:///:memory:", echo=False)
-    Base.metadata.create_all(bind=engine)
-    yield engine
-    Base.metadata.drop_all(bind=engine)
+from unittest.mock import Mock
 
 
 @pytest.fixture
-def test_session(test_engine) -> Generator[Session, None, None]:
-    """Create test database session."""
-    TestingSessionLocal = sessionmaker(
-        autocommit=False, autoflush=False, bind=test_engine
-    )
-    session = TestingSessionLocal()
-    try:
-        yield session
-    finally:
-        session.rollback()
-        session.close()
-
-
-@pytest.fixture
-def mock_settings():
-    """Mock settings for testing."""
-    with patch("pyrag.config.get_config") as mock:
-        # Configure mock settings
-        mock.return_value.environment = "testing"
-        mock.return_value.vector_store.db_path = "./test_chroma_db"
-        mock.return_value.embedding.device = "cpu"
-        mock.return_value.log_level = "DEBUG"
-        yield mock
-
-
-@pytest.fixture
-def mock_logger():
-    """Mock logger for testing."""
-    with patch("pyrag.logging.get_logger") as mock:
-        logger = Mock()
-        mock.return_value = logger
-        yield logger
+def mock_config():
+    """Mock configuration for testing."""
+    config = Mock()
+    config.llm.api_key = "test_key"
+    config.llm.base_url = "https://test.api.com"
+    config.llm.model = "test-model"
+    config.firecrawl.api_key = "test_firecrawl_key"
+    config.vector_store.db_path = "./test_chroma_db"
+    return config
 
 
 @pytest.fixture
 def sample_library_data():
     """Sample library data for testing."""
     return {
-        "name": "requests",
-        "description": "Python HTTP library",
-        "repository_url": "https://github.com/psf/requests",
-        "documentation_url": "https://docs.python-requests.org/",
-        "license": "Apache-2.0",
+        "name": "test-library",
+        "description": "A test library for testing purposes",
+        "repository_url": "https://github.com/test/test-library",
+        "documentation_url": "https://test-library.readthedocs.io",
+        "license": "MIT",
     }
 
 
 @pytest.fixture
-def sample_document_chunk_data():
-    """Sample document chunk data for testing."""
+def sample_document_data():
+    """Sample document data for testing."""
     return {
-        "content": "Make a GET request to the specified URL",
-        "content_type": "method_description",
-        "hierarchy_path": "requests.get",
-        "hierarchy_level": 3,
-        "title": "requests.get",
-        "source_url": "https://docs.python-requests.org/en/latest/api/#requests.get",
+        "content": "This is a test document content for testing purposes.",
+        "metadata": {
+            "library": "test-library",
+            "version": "1.0.0",
+            "content_type": "api_reference",
+            "hierarchy_path": ["test", "function"],
+            "api_path": "test.function",
+        },
     }

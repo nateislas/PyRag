@@ -10,7 +10,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ..config import settings
-from ..database import create_tables
 from ..logging import get_logger, setup_logging
 
 # Setup logging
@@ -29,9 +28,6 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting PyRAG API server")
     try:
-        # Create database tables
-        create_tables()
-        logger.info("Database tables created successfully")
 
         # Start MCP server if configured for HTTP transport
         if os.getenv("MCP_TRANSPORT", "stdio").lower() == "http":

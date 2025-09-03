@@ -51,6 +51,15 @@ class EmbeddingConfig:
 
 
 @dataclass
+class APIConfig:
+    """API configuration."""
+
+    cors_origins: list[str] = None
+    host: str = "0.0.0.0"
+    port: int = 8000
+
+
+@dataclass
 class PyRAGConfig:
     """Main PyRAG configuration."""
 
@@ -58,7 +67,9 @@ class PyRAGConfig:
     firecrawl: FirecrawlConfig
     vector_store: VectorStoreConfig
     embedding: EmbeddingConfig
+    api: APIConfig
     log_level: str = "INFO"
+    is_development: bool = True
 
 
 def get_config() -> PyRAGConfig:
@@ -100,13 +111,25 @@ def get_config() -> PyRAGConfig:
         == "true",
     )
 
+    # API Configuration
+    api_config = APIConfig(
+        cors_origins=["*"],
+        host=os.getenv("API_HOST", "0.0.0.0"),
+        port=int(os.getenv("API_PORT", "8000")),
+    )
+
     return PyRAGConfig(
         llm=llm_config,
         firecrawl=firecrawl_config,
         vector_store=vector_store_config,
         embedding=embedding_config,
+        api=api_config,
         log_level=os.getenv("LOG_LEVEL", "INFO"),
     )
+
+
+# Create a settings instance for FastAPI
+settings = get_config()
 
 
 def validate_config(config: PyRAGConfig) -> bool:

@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, Mock
 
 import pytest
 
-from pyrag.caching import CacheManager
+from pyrag.trash.caching import CacheManager
 from pyrag.core import PyRAG
 from pyrag.mcp.server import mcp
 from pyrag.search import EnhancedSearchEngine, QueryAnalysis, QueryAnalyzer

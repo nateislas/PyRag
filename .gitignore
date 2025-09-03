@@ -160,9 +160,6 @@ trash/
 docs/
 
 # Development and testing artifacts
-*.db
-*.sqlite
-*.sqlite3
 reports/
 test_*.py
 *_test.py
