@@ -18,6 +18,7 @@ from .enhanced_documentation_processor import (
     EnhancedProcessingResult,
 )
 from .firecrawl_client import FirecrawlClient, ScrapedDocument
+from .crawl4ai_client import Crawl4AIClient
 from .intelligent_crawler import CrawlResult, CrawlStrategy, IntelligentCrawler
 from .sitemap_analyzer import SitemapAnalyzer
 from .structure_mapper import DocumentationStructureMapper
@@ -64,12 +65,14 @@ class DocumentationManager:
         embedding_service: EmbeddingService,
         llm_client: Optional[LLMClient] = None,
         firecrawl_api_key: Optional[str] = None,
+        use_crawl4ai: bool = False,
         cache_dir: str = "./cache",
     ):
         self.vector_store = vector_store
         self.embedding_service = embedding_service
         self.llm_client = llm_client
         self.firecrawl_api_key = firecrawl_api_key
+        self.use_crawl4ai = use_crawl4ai
         self.cache_dir = Path(cache_dir)
         self.logger = get_logger(__name__)
 
@@ -87,6 +90,12 @@ class DocumentationManager:
         # Initialize metadata sanitizer for ChromaDB compatibility
         self.metadata_sanitizer = MetadataSanitizer()
         self.logger.info("Initialized metadata sanitizer for ChromaDB compatibility")
+
+        # Log client selection
+        if self.use_crawl4ai:
+            self.logger.info("🚀 Using Crawl4AI client (local, fast, unlimited)")
+        else:
+            self.logger.info("🌐 Using Firecrawl client (external API)")
 
         # Create cache directory
         self.cache_dir.mkdir(exist_ok=True)
@@ -365,10 +374,17 @@ class DocumentationManager:
     async def _extract_content(
         self, job: DocumentationJob, urls: Set[str]
     ) -> tuple[Dict[str, Any], List[ScrapedDocument]]:
-        """Phase 2: Extract content from discovered URLs using Firecrawl."""
+        """Phase 2: Extract content from discovered URLs using selected client."""
 
-        if not self.firecrawl_api_key:
-            raise ValueError("Firecrawl API key required for content extraction")
+        # Choose client based on configuration
+        if self.use_crawl4ai:
+            self.logger.info("🚀 Using Crawl4AI client for content extraction")
+            client = Crawl4AIClient()
+        else:
+            if not self.firecrawl_api_key:
+                raise ValueError("Firecrawl API key required for content extraction")
+            self.logger.info("🌐 Using Firecrawl client for content extraction")
+            client = FirecrawlClient(api_key=self.firecrawl_api_key)
 
         self.logger.info(f"Extracting content from {len(urls)} URLs")
 
@@ -382,7 +398,7 @@ class DocumentationManager:
             all_urls if getattr(job, "max_content_pages", 0) <= 0 else all_urls[: job.max_content_pages]
         )
 
-        async with FirecrawlClient(api_key=self.firecrawl_api_key) as client:
+        async with client:
             for i, url in enumerate(urls_to_extract, 1):
                 try:
                     self.logger.info(
@@ -393,18 +409,21 @@ class DocumentationManager:
                     documents.append(doc)
                     total_content_length += len(doc.content)
 
-                    # Check if result was cached
-                    if hasattr(client, "is_cached_result") and client.is_cached_result(
-                        doc
-                    ):
-                        self.logger.info(
-                            f"⚡ Cached result for {url} (instant response!)"
-                        )
+                    # Enhanced caching feedback (only for Firecrawl)
+                    if not self.use_crawl4ai and hasattr(client, 'is_cached_result'):
+                        if client.is_cached_result(doc):
+                            cache_age = client.get_cache_age_hours(doc)
+                            self.logger.info(
+                                f"⚡ CACHE HIT for {url} (age: {cache_age:.1f}h) - Instant response!"
+                            )
+                        else:
+                            self.logger.info(f"🆕 Fresh scrape for {url} - Stored in cache for future use")
                     else:
-                        self.logger.info(f"🆕 Fresh scrape for {url}")
+                        self.logger.info(f"✅ Successfully extracted: {url}")
 
-                    # Add delay to be respectful and avoid rate limits
-                    await asyncio.sleep(2)
+                    # Add delay to be respectful and avoid rate limits (only for Firecrawl)
+                    if not self.use_crawl4ai:
+                        await asyncio.sleep(2)
 
                 except Exception as e:
                     self.logger.warning(f"Failed to extract content from {url}: {e}")

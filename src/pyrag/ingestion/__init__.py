@@ -24,6 +24,15 @@ from .structure_mapper import (
     DocumentationStructure,
     DocumentationStructureMapper,
 )
+from .metadata_sanitizer import (
+    MetadataSanitizer,
+    sanitize_metadata,
+    validate_metadata,
+)
+from .document_structure_analyzer import (
+    DocumentStructureAnalyzer,
+    DocumentAnalysis,
+)
 
 __all__ = [
     # Core components
@@ -48,4 +57,11 @@ __all__ = [
     "CrawlStrategy",
     "CrawlProgress",
     "IntelligentCrawlResult",
+    # Metadata sanitization
+    "MetadataSanitizer",
+    "sanitize_metadata",
+    "validate_metadata",
+    # Document structure analysis
+    "DocumentStructureAnalyzer",
+    "DocumentAnalysis",
 ]
