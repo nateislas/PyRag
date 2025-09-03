@@ -154,6 +154,7 @@ chroma_db/
 scripts/
 tools/pipeline/
 tools/testing/
+trash/
 
 # Documentation (development only)
 docs/
