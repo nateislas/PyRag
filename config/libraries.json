@@ -70,13 +70,175 @@
       "priority": 1,
       "enabled": true,
       "notes": "Local LLM deployment - need all models, tokenizers, pipelines, training, optimization"
+    },
+    {
+      "name": "chromadb",
+      "url": "https://docs.trychroma.com/",
+      "description": "Vector database for AI applications - EMBEDDING STORAGE AND RETRIEVAL",
+      "category": "vector_database",
+      "expected_complexity": "high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Critical for RAG systems - need full coverage of collections, embeddings, queries, persistence, deployment patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://docs.trychroma.com/getting-started",
+        "https://docs.trychroma.com/guides",
+        "https://docs.trychroma.com/api-reference",
+        "https://docs.trychroma.com/usage-guide"
+      ]
+    },
+    {
+      "name": "llamaindex",
+      "url": "https://docs.llamaindex.ai/",
+      "description": "Data framework for LLM applications - COMPLEX RAG AND DATA PIPELINES",
+      "category": "ai_ml",
+      "expected_complexity": "very_high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Advanced RAG framework that LLMs struggle with - need comprehensive coverage of data connectors, indices, query engines, agents, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://docs.llamaindex.ai/get_started/",
+        "https://docs.llamaindex.ai/use_cases/",
+        "https://docs.llamaindex.ai/module_guides/",
+        "https://docs.llamaindex.ai/examples/"
+      ]
+    },
+    {
+      "name": "streamlit",
+      "url": "https://docs.streamlit.io/",
+      "description": "Rapid AI app development and deployment - PROTOTYPING TO PRODUCTION",
+      "category": "web_framework",
+      "expected_complexity": "medium",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 2,
+      "enabled": true,
+      "notes": "AI app deployment framework - need tutorials, components, deployment, performance optimization, production patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://docs.streamlit.io/library/get-started",
+        "https://docs.streamlit.io/library/api-reference",
+        "https://docs.streamlit.io/deploy",
+        "https://docs.streamlit.io/knowledge-base"
+      ]
+    },
+    {
+      "name": "gradio",
+      "url": "https://www.gradio.app/docs/",
+      "description": "Simple ML model deployment interfaces - QUICK AI DEMOS TO PRODUCTION",
+      "category": "web_framework",
+      "expected_complexity": "medium",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 2,
+      "enabled": true,
+      "notes": "ML model deployment framework - need components, interfaces, deployment, hosting, production scaling. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://www.gradio.app/docs/",
+        "https://www.gradio.app/guides/",
+        "https://www.gradio.app/docs/components",
+        "https://www.gradio.app/docs/interface"
+      ]
+    },
+    {
+      "name": "flask",
+      "url": "https://flask.palletsprojects.com/",
+      "description": "Lightweight web framework - SIMPLE AI API DEPLOYMENT",
+      "category": "web_framework",
+      "expected_complexity": "medium",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 2,
+      "enabled": true,
+      "notes": "Simple web framework for AI APIs - need tutorials, extensions, deployment, production patterns, security. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://flask.palletsprojects.com/en/3.0.x/",
+        "https://flask.palletsprojects.com/en/3.0.x/quickstart/",
+        "https://flask.palletsprojects.com/en/3.0.x/deploying/",
+        "https://flask.palletsprojects.com/en/3.0.x/patterns/"
+      ]
+    },
+    {
+      "name": "django",
+      "url": "https://docs.djangoproject.com/",
+      "description": "Full-featured web framework - ENTERPRISE AI APPLICATIONS",
+      "category": "web_framework",
+      "expected_complexity": "very_high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 2,
+      "enabled": true,
+      "notes": "Enterprise web framework for AI apps - need tutorials, models, admin, deployment, production, scaling, security. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://docs.djangoproject.com/en/stable/",
+        "https://docs.djangoproject.com/en/stable/intro/",
+        "https://docs.djangoproject.com/en/stable/topics/",
+        "https://docs.djangoproject.com/en/stable/howto/"
+      ]
+    },
+    {
+      "name": "langsmith",
+      "url": "https://docs.smith.langchain.com/",
+      "description": "LangChain observability platform - PRODUCTION MONITORING AND DEBUGGING",
+      "category": "monitoring",
+      "expected_complexity": "high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 1,
+      "enabled": true,
+      "notes": "Critical for production LLM monitoring - need tracing, debugging, evaluation, deployment, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://docs.smith.langchain.com/",
+        "https://docs.smith.langchain.com/tracing",
+        "https://docs.smith.langchain.com/evaluation",
+        "https://docs.smith.langchain.com/deployment"
+      ]
+    },
+    {
+      "name": "prometheus",
+      "url": "https://prometheus.io/docs/",
+      "description": "Metrics collection and monitoring - INFRASTRUCTURE OBSERVABILITY",
+      "category": "monitoring",
+      "expected_complexity": "high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 2,
+      "enabled": true,
+      "notes": "Infrastructure monitoring for AI systems - need installation, configuration, metrics, alerting, integration with AI apps. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://prometheus.io/docs/introduction/",
+        "https://prometheus.io/docs/guides/",
+        "https://prometheus.io/docs/prometheus/latest/",
+        "https://prometheus.io/docs/alerting/"
+      ]
+    },
+    {
+      "name": "grafana",
+      "url": "https://grafana.com/docs/",
+      "description": "Data visualization and monitoring - AI SYSTEM DASHBOARDS",
+      "category": "monitoring",
+      "expected_complexity": "high",
+      "max_crawl_pages": 0,
+      "max_content_pages": 0,
+      "priority": 2,
+      "enabled": true,
+      "notes": "Monitoring dashboards for AI systems - need installation, dashboards, panels, data sources, alerting, AI-specific metrics. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
+      "coverage_targets": [
+        "https://grafana.com/docs/grafana/",
+        "https://grafana.com/docs/grafana/latest/getting-started/",
+        "https://grafana.com/docs/grafana/latest/dashboards/",
+        "https://grafana.com/docs/grafana/latest/alerting/"
+      ]
     }
   ],
   "metadata": {
-    "version": "1.0",
-    "description": "Top 5 GenAI libraries for comprehensive documentation ingestion",
-    "total_libraries": 5,
-    "categories": ["ai_ml", "data_validation", "web_framework"],
-    "notes": "These libraries provide comprehensive coverage for GenAI application development. High page limits ensure we capture all documentation, tutorials, and examples."
+    "version": "2.0",
+    "description": "Comprehensive GenAI library collection focusing on deployment, monitoring, and complex RAG systems",
+    "total_libraries": 13,
+    "categories": ["ai_ml", "data_validation", "web_framework", "vector_database", "monitoring"],
+    "notes": "Expanded collection targeting areas where LLMs struggle: deployment patterns, production monitoring, complex RAG systems, and operational concerns. High page limits ensure comprehensive coverage of deployment and production patterns."
   }
 }

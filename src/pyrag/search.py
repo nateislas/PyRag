@@ -8,13 +8,13 @@ logger = get_logger(__name__)
 
 class SimpleSearchEngine:
     """Simplified search engine that leverages ChromaDB's built-in capabilities."""
-    
+
     def __init__(self, vector_store, embedding_service):
         """Initialize the simple search engine."""
         self.logger = get_logger(__name__)
         self.vector_store = vector_store
         self.embedding_service = embedding_service
-    
+
     async def search(
         self,
         query: str,
@@ -81,9 +81,9 @@ class SimpleSearchEngine:
         if library:
             where_clause["library_name"] = str(library)
         
-        if version:
-            where_clause["version"] = str(version)
-        
+            if version:
+                where_clause["version"] = str(version)
+
         # If we have multiple conditions, use $and
         if len(where_clause) > 1:
             return {"$and": [{"k": v} for k, v in where_clause.items()]}
