@@ -277,9 +277,9 @@ class TraceCollector:
             "total_traces": len(recent_traces),
             "completed_traces": len(completed_traces),
             "total_spans": total_spans,
-            "avg_spans_per_trace": total_spans / len(recent_traces)
-            if recent_traces
-            else 0,
+            "avg_spans_per_trace": (
+                total_spans / len(recent_traces) if recent_traces else 0
+            ),
             "avg_trace_duration": sum(durations) / len(durations) if durations else 0,
             "min_trace_duration": min(durations) if durations else 0,
             "max_trace_duration": max(durations) if durations else 0,

@@ -75,9 +75,11 @@ services:
       - LOG_LEVEL=DEBUG
       - MCP_TRANSPORT=http
       - MCP_HOST=0.0.0.0
-      - MCP_PORT=8000
+      - MCP_PORT=8002
+      - MCP_ENABLE_HTTPS=true
     ports:
       - "8000:8000"
+      - "8002:8002"
     volumes:
       - .:/app
       - /app/__pycache__

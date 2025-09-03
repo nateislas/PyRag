@@ -458,9 +458,11 @@ class AutoScaler:
             return
 
         decision = ScalingDecision(
-            action=ScalingAction.SCALE_UP
-            if target_instances > self.current_instances
-            else ScalingAction.SCALE_DOWN,
+            action=(
+                ScalingAction.SCALE_UP
+                if target_instances > self.current_instances
+                else ScalingAction.SCALE_DOWN
+            ),
             reason="Manual scaling request",
             target_instances=target_instances,
             current_instances=self.current_instances,

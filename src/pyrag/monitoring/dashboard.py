@@ -342,12 +342,14 @@ class MonitoringDashboard:
                     ).strftime("%H:%M:%S"),
                     "severity": alert.get("severity", "unknown"),
                     "rule_name": alert.get("rule_name", ""),
-                    "message": alert.get("message", "")[:50] + "..."
-                    if len(alert.get("message", "")) > 50
-                    else alert.get("message", ""),
-                    "status": "active"
-                    if not alert.get("resolved", False)
-                    else "resolved",
+                    "message": (
+                        alert.get("message", "")[:50] + "..."
+                        if len(alert.get("message", "")) > 50
+                        else alert.get("message", "")
+                    ),
+                    "status": (
+                        "active" if not alert.get("resolved", False) else "resolved"
+                    ),
                 }
             )
 

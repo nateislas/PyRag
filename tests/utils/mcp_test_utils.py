@@ -208,18 +208,22 @@ class MCPPerformanceMonitor:
             "avg_response_time": avg_response_time,
             "min_response_time": min_response_time,
             "max_response_time": max_response_time,
-            "requests_per_second": len(self.requests) / total_time
-            if total_time > 0
-            else 0,
-            "memory_usage": {
-                "avg": sum(self.memory_usage) / len(self.memory_usage)
+            "requests_per_second": (
+                len(self.requests) / total_time if total_time > 0 else 0
+            ),
+            "memory_usage": (
+                {
+                    "avg": (
+                        sum(self.memory_usage) / len(self.memory_usage)
+                        if self.memory_usage
+                        else 0
+                    ),
+                    "min": min(self.memory_usage) if self.memory_usage else 0,
+                    "max": max(self.memory_usage) if self.memory_usage else 0,
+                }
                 if self.memory_usage
-                else 0,
-                "min": min(self.memory_usage) if self.memory_usage else 0,
-                "max": max(self.memory_usage) if self.memory_usage else 0,
-            }
-            if self.memory_usage
-            else None,
+                else None
+            ),
         }
 
 
@@ -452,7 +456,7 @@ async def run_mcp_performance_test(
     return {
         "performance_summary": monitor.get_summary(),
         "test_results": results,
-        "success_rate": len([r for r in results if r["success"]]) / len(results)
-        if results
-        else 0,
+        "success_rate": (
+            len([r for r in results if r["success"]]) / len(results) if results else 0
+        ),
     }

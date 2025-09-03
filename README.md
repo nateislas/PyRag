@@ -86,11 +86,13 @@ Your AI assistant now has comprehensive documentation for:
 ## 🎯 **How It Works**
 
 1. **You ask your AI assistant** about Python libraries (just like normal)
-2. **Your AI assistant connects** to the PyRAG MCP server
+2. **Your AI assistant connects** to the PyRAG MCP server via HTTPS
 3. **PyRAG searches** comprehensive, up-to-date documentation
 4. **You get better answers** with current information and examples
 
 **Simple setup**: Just configure your MCP client to connect to the PyRAG server, then start asking questions!
+
+> **Note**: Claude requires HTTPS connections for security. See [MCP HTTPS Setup](docs/mcp_https_setup.md) for configuration details.
 
 ## 🔍 **What You Can Ask**
 
