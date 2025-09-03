@@ -39,16 +39,15 @@ class VectorStoreConfig:
 
 @dataclass
 class EmbeddingConfig:
-    """Embedding model configuration for Qodo model with INT4 quantization."""
+    """Embedding model configuration."""
 
-    model_name: str = "Qodo/Qodo-Embed-1-1.5B"  # Original model
+    model_name: str = "sentence-transformers/all-MiniLM-L6-v2"  # 384-dim fast model
     device: str = "auto"  # "auto", "cuda", "cpu"
-    max_length: int = 32768  # Qodo supports up to 32k tokens
+    max_length: int = 256
     batch_size: int = 8
     normalize_embeddings: bool = True
-    enable_int4_quantization: bool = True  # Enable INT4 quantization
-    cache_models_locally: bool = True  # Cache quantized models locally
-    # Note: Requires flash_attn>=2.5.6 for optimal performance
+    enable_int4_quantization: bool = False
+    cache_models_locally: bool = True
 
 
 @dataclass
@@ -88,12 +87,14 @@ def get_config() -> PyRAGConfig:
 
     # Embedding Configuration
     embedding_config = EmbeddingConfig(
-        model_name=os.getenv("EMBEDDING_MODEL", "Qodo/Qodo-Embed-1-1.5B"),
+        model_name=os.getenv(
+            "EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+        ),
         device=os.getenv("EMBEDDING_DEVICE", "auto"),
-        max_length=int(os.getenv("EMBEDDING_MAX_LENGTH", "32768")),
-        batch_size=int(os.getenv("EMBEDDING_BATCH_SIZE", "8")),
+        max_length=int(os.getenv("EMBEDDING_MAX_LENGTH", "256")),
+        batch_size=int(os.getenv("EMBEDDING_BATCH_SIZE", "64")),
         normalize_embeddings=os.getenv("EMBEDDING_NORMALIZE", "true").lower() == "true",
-        enable_int4_quantization=os.getenv("EMBEDDING_INT4_QUANTIZE", "true").lower()
+        enable_int4_quantization=os.getenv("EMBEDDING_INT4_QUANTIZE", "false").lower()
         == "true",
         cache_models_locally=os.getenv("EMBEDDING_CACHE_MODELS", "true").lower()
         == "true",

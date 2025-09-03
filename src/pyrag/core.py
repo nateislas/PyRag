@@ -149,9 +149,11 @@ class PyRAG:
             response["related_apis"] = [
                 {
                     "api_path": r["metadata"].get("api_path"),
-                    "content": r["content"][:200] + "..."
-                    if len(r["content"]) > 200
-                    else r["content"],
+                    "content": (
+                        r["content"][:200] + "..."
+                        if len(r["content"]) > 200
+                        else r["content"]
+                    ),
                     "score": r["score"],
                 }
                 for r in related_results[:3]
@@ -195,9 +197,9 @@ class PyRAG:
         """Find similar usage patterns or alternative approaches."""
         self.logger.info(
             "Finding similar patterns",
-            code_snippet=code_snippet[:100] + "..."
-            if len(code_snippet) > 100
-            else code_snippet,
+            code_snippet=(
+                code_snippet[:100] + "..." if len(code_snippet) > 100 else code_snippet
+            ),
             intent=intent,
         )
 
@@ -293,12 +295,12 @@ class PyRAG:
                         "name": library.name,
                         "description": library.description,
                         "status": library.indexing_status,
-                        "latest_version": latest_version.version
-                        if latest_version
-                        else None,
-                        "chunk_count": latest_version.chunk_count
-                        if latest_version
-                        else 0,
+                        "latest_version": (
+                            latest_version.version if latest_version else None
+                        ),
+                        "chunk_count": (
+                            latest_version.chunk_count if latest_version else 0
+                        ),
                     }
                 )
 
@@ -346,7 +348,7 @@ class PyRAG:
 
             # Generate embeddings for documents
             texts = [doc["content"] for doc in documents]
-            embeddings = await self.embedding_service.embed_texts(texts)
+            embeddings = await self.embedding_service.generate_embeddings(texts)
 
             # Prepare documents with embeddings
             prepared_docs = []

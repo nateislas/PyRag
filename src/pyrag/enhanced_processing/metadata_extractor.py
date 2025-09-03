@@ -207,7 +207,9 @@ class MetadataExtractor:
                 if isinstance(exceptions, list):
                     return exceptions
                 else:
-                    self.logger.warning(f"Exceptions field is not a list: {type(exceptions)}")
+                    self.logger.warning(
+                        f"Exceptions field is not a list: {type(exceptions)}"
+                    )
                     return []
             elif isinstance(result, list):
                 return result
@@ -372,12 +374,16 @@ class MetadataExtractor:
                 if isinstance(dependencies, list):
                     return dependencies
                 else:
-                    self.logger.warning(f"Dependencies field is not a list: {type(dependencies)}")
+                    self.logger.warning(
+                        f"Dependencies field is not a list: {type(dependencies)}"
+                    )
                     return []
             elif isinstance(result, list):
                 return result
             else:
-                self.logger.warning(f"Unexpected dependencies response format: {result}")
+                self.logger.warning(
+                    f"Unexpected dependencies response format: {result}"
+                )
                 return []
 
         except Exception as e:
@@ -435,7 +441,9 @@ class MetadataExtractor:
                 if isinstance(use_cases, list):
                     return use_cases
                 else:
-                    self.logger.warning(f"Use cases field is not a list: {type(use_cases)}")
+                    self.logger.warning(
+                        f"Use cases field is not a list: {type(use_cases)}"
+                    )
                     return []
             elif isinstance(result, list):
                 return result

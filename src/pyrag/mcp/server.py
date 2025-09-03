@@ -453,9 +453,7 @@ async def list_available_libraries(ctx: Context = None) -> str:
             status_emoji = (
                 "✅"
                 if lib["status"] == "indexed"
-                else "⏳"
-                if lib["status"] == "indexing"
-                else "❌"
+                else "⏳" if lib["status"] == "indexing" else "❌"
             )
             response_parts.append(f"## {status_emoji} {lib['name']}")
             if lib["description"]:
@@ -504,9 +502,7 @@ async def get_library_status(
         status_emoji = (
             "✅"
             if status["status"] == "indexed"
-            else "⏳"
-            if status["status"] == "indexing"
-            else "❌"
+            else "⏳" if status["status"] == "indexing" else "❌"
         )
         response_parts.append(f"**Status:** {status_emoji} {status['status']}")
 
@@ -545,10 +541,41 @@ async def main():
         host = os.getenv("MCP_HOST", "0.0.0.0")  # Bind to all interfaces by default
         port = int(os.getenv("MCP_PORT", "8000"))  # Default MCP port
 
-        logger.info(f"Binding MCP server to {host}:{port}")
+        # Check if HTTPS is enabled
+        enable_https = os.getenv("MCP_ENABLE_HTTPS", "false").lower() == "true"
 
-        # Run the server with network binding
-        await mcp.run(host=host, port=port)
+        if enable_https:
+            logger.info("Starting MCP server with HTTPS")
+            # Use uvicorn with SSL configuration
+            from pathlib import Path
+
+            import uvicorn
+
+            cert_path = Path("certs/mcp_server.crt")
+            key_path = Path("certs/mcp_server.key")
+
+            if not cert_path.exists() or not key_path.exists():
+                logger.error(
+                    "SSL certificates not found. Please run tools/generate_ssl_certs.py first"
+                )
+                sys.exit(1)
+
+            # Create FastAPI app from MCP server
+            app = mcp.http_app()
+
+            # Run with HTTPS
+            uvicorn_config = {
+                "ssl_keyfile": str(key_path),
+                "ssl_certfile": str(cert_path),
+                "ssl_version": "TLSv1_2",
+            }
+
+            logger.info(f"Binding MCP server to {host}:{port} with HTTPS")
+            await uvicorn.run(app, host=host, port=port, **uvicorn_config)
+        else:
+            logger.info(f"Binding MCP server to {host}:{port} with HTTP")
+            # Run the server with network binding
+            await mcp.run(host=host, port=port)
     else:
         logger.error(f"Unsupported transport type: {transport_type}")
         logger.info("Supported transport types: stdio, http")

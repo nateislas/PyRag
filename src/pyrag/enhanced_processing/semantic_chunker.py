@@ -267,12 +267,16 @@ class SemanticChunker:
                 relationships=boundary.get("related_concepts", []),
                 api_path=boundary.get("api_path"),
                 function_signature=boundary.get("function_signature"),
-                parameters=await self._extract_parameters(chunk_content)
-                if boundary.get("type") == "function"
-                else None,
-                return_type=await self._extract_return_type(chunk_content)
-                if boundary.get("type") == "function"
-                else None,
+                parameters=(
+                    await self._extract_parameters(chunk_content)
+                    if boundary.get("type") == "function"
+                    else None
+                ),
+                return_type=(
+                    await self._extract_return_type(chunk_content)
+                    if boundary.get("type") == "function"
+                    else None
+                ),
                 examples=await self._extract_examples(chunk_content),
             )
 
@@ -440,7 +444,9 @@ class SemanticChunker:
                 if isinstance(examples, list):
                     return examples
                 else:
-                    self.logger.warning(f"Examples field is not a list: {type(examples)}")
+                    self.logger.warning(
+                        f"Examples field is not a list: {type(examples)}"
+                    )
                     return []
             elif isinstance(result, list):
                 return result

@@ -66,12 +66,12 @@ class FirecrawlClient:
         # Use scrape API for better caching support
         # Default to 1 day cache for documentation (86400000 ms)
         max_age = options.get("maxAge", 86400000) if options else 86400000
-        
+
         payload = {
             "url": url,
             "formats": ["markdown", "html"],
             "maxAge": max_age,  # Use cached data if less than 1 day old
-            "storeInCache": True  # Store results for future use
+            "storeInCache": True,  # Store results for future use
         }
 
         try:
@@ -83,7 +83,7 @@ class FirecrawlClient:
             ) as response:
                 if response.status == 200:
                     data = await response.json()
-                    
+
                     # Parse scrape API response format
                     return self._parse_scrape_response(data, url)
                 else:
@@ -312,7 +312,7 @@ class FirecrawlClient:
             title = scraped_data.get("title", "")
             content = scraped_data.get("text", "") or scraped_data.get("content", "")
             markdown = scraped_data.get("markdown", "")
-            
+
             # Extract links and images from HTML if available
             links = []
             images = []
@@ -321,12 +321,13 @@ class FirecrawlClient:
                 html_content = scraped_data["html"]
                 # Extract links (basic regex for href attributes)
                 import re
+
                 link_matches = re.findall(r'href=["\']([^"\']+)["\']', html_content)
-                links = [link for link in link_matches if link.startswith('http')]
-                
+                links = [link for link in link_matches if link.startswith("http")]
+
                 # Extract images (basic regex for src attributes)
                 img_matches = re.findall(r'src=["\']([^"\']+)["\']', html_content)
-                images = [img for img in img_matches if img.startswith('http')]
+                images = [img for img in img_matches if img.startswith("http")]
 
             return ScrapedDocument(
                 url=url,
@@ -337,7 +338,9 @@ class FirecrawlClient:
                     "links": links,
                     "images": images,
                     "metadata": scraped_data.get("metadata", {}),
-                    "cached": scraped_data.get("cached", False),  # Track if result was cached
+                    "cached": scraped_data.get(
+                        "cached", False
+                    ),  # Track if result was cached
                 },
                 screenshot_url=scraped_data.get("screenshot", None),
             )

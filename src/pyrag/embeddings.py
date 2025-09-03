@@ -42,7 +42,7 @@ class EmbeddingService:
 
         # Initialize model
         self._load_model()
-        
+
         # Initialize tokenizer for token-aware truncation/logging
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
@@ -201,7 +201,10 @@ class EmbeddingService:
                     )
                     # If tokenizer returns dict with 'input_ids'
                     input_ids = enc["input_ids"] if isinstance(enc, dict) else enc
-                    if isinstance(input_ids, list) and len(input_ids) > self.config.max_length:
+                    if (
+                        isinstance(input_ids, list)
+                        and len(input_ids) > self.config.max_length
+                    ):
                         over_limit_count += 1
                     # Decode to plain text so downstream normalization remains consistent
                     if isinstance(enc, dict):

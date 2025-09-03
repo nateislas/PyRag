@@ -294,13 +294,21 @@ class ContentTypeProcessor:
 
             # Validate result structure
             if isinstance(result, dict):
-                required_fields = ["functions", "classes", "imports", "variables", "comments"]
+                required_fields = [
+                    "functions",
+                    "classes",
+                    "imports",
+                    "variables",
+                    "comments",
+                ]
                 for field in required_fields:
                     if field not in result or not isinstance(result[field], list):
                         result[field] = []
                 return result
             else:
-                self.logger.warning(f"Unexpected code elements response format: {result}")
+                self.logger.warning(
+                    f"Unexpected code elements response format: {result}"
+                )
                 return {
                     "functions": [],
                     "classes": [],
@@ -721,12 +729,16 @@ class ContentTypeProcessor:
                 if isinstance(prerequisites, list):
                     return prerequisites
                 else:
-                    self.logger.warning(f"Tutorial prerequisites field is not a list: {type(prerequisites)}")
+                    self.logger.warning(
+                        f"Tutorial prerequisites field is not a list: {type(prerequisites)}"
+                    )
                     return []
             elif isinstance(result, list):
                 return result
             else:
-                self.logger.warning(f"Unexpected tutorial prerequisites response format: {result}")
+                self.logger.warning(
+                    f"Unexpected tutorial prerequisites response format: {result}"
+                )
                 return []
 
         except Exception as e:

@@ -2,11 +2,12 @@
 
 import asyncio
 import json
-import aiohttp
 import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
+
+import aiohttp
 
 from ..embeddings import EmbeddingService
 from ..llm.client import LLMClient
@@ -179,7 +180,7 @@ class DocumentationManager:
                 crawl_statistics={},
                 errors=errors,
                 warnings=[],
-                success=False
+                success=False,
             )
 
             return DocumentationResult(
@@ -196,53 +197,61 @@ class DocumentationManager:
         """Phase 1: Discover all relevant documentation links using enhanced pipeline."""
 
         self.logger.info(f"Starting enhanced discovery for {job.library_name}")
-        
+
         try:
             # Step 1: Analyze sitemap and discover URLs
             self.logger.info("Analyzing documentation sitemap...")
-            
+
             async with aiohttp.ClientSession() as session:
                 sitemap_analyzer = SitemapAnalyzer(session=session)
-                sitemap_analysis = await sitemap_analyzer.analyze_documentation_site(job.base_url)
-            
+                sitemap_analysis = await sitemap_analyzer.analyze_documentation_site(
+                    job.base_url
+                )
+
             if not sitemap_analysis or not sitemap_analysis.discovered_urls:
                 self.logger.warning("No URLs discovered from sitemap analysis")
-                return self._create_empty_crawl_result("No URLs discovered from sitemap")
-            
-            self.logger.info(f"Discovered {len(sitemap_analysis.discovered_urls)} URLs from sitemap")
-            
+                return self._create_empty_crawl_result(
+                    "No URLs discovered from sitemap"
+                )
+
+            self.logger.info(
+                f"Discovered {len(sitemap_analysis.discovered_urls)} URLs from sitemap"
+            )
+
             # Step 2: Map documentation structure
             self.logger.info("Mapping documentation structure...")
             structure_mapper = DocumentationStructureMapper()
             structure = structure_mapper.map_documentation_structure(
-                [entry.url for entry in sitemap_analysis.discovered_urls],
-                job.base_url
+                [entry.url for entry in sitemap_analysis.discovered_urls], job.base_url
             )
-            
-            self.logger.info(f"Mapped {len(structure.nodes)} nodes with {len(structure.content_types)} content types")
-            
+
+            self.logger.info(
+                f"Mapped {len(structure.nodes)} nodes with {len(structure.content_types)} content types"
+            )
+
             # Step 3: Create intelligent crawling strategy based on structure
             strategy = self._create_enhanced_crawl_strategy(job, structure)
-            
+
             # Step 4: Execute enhanced crawling with our discovered URLs
             self.logger.info("Executing enhanced crawling with discovered URLs...")
-            
+
             crawler = IntelligentCrawler(
-                strategy=strategy,
-                progress_callback=self._log_crawl_progress
+                strategy=strategy, progress_callback=self._log_crawl_progress
             )
-            
+
             # Use our enhanced analysis results directly
             crawl_result = await crawler.crawl_documentation_site(
                 base_url=job.base_url,
                 sitemap_analysis=sitemap_analysis,  # Pass our enhanced analysis
-                structure=structure,                 # Pass our enhanced structure
-                custom_strategy=strategy            # Pass our enhanced strategy
+                structure=structure,  # Pass our enhanced structure
+                custom_strategy=strategy,  # Pass our enhanced strategy
             )
-            
-            self.logger.info(f"Enhanced crawling completed: {len(crawl_result.discovered_urls)} URLs discovered")
+
+            self.logger.info(
+                f"Enhanced crawling completed: {len(crawl_result.discovered_urls)} URLs discovered"
+            )
             return crawl_result
-            
+
         except Exception as e:
             self.logger.error(f"Enhanced discovery failed: {e}")
             return self._create_empty_crawl_result(f"Discovery failed: {e}")
@@ -250,7 +259,7 @@ class DocumentationManager:
     def _log_crawl_progress(self, progress_data):
         """Log crawling progress updates."""
         # Handle both CrawlProgress objects and dictionaries
-        if hasattr(progress_data, 'total_crawled'):
+        if hasattr(progress_data, "total_crawled"):
             # It's a CrawlProgress object
             total_crawled = progress_data.total_crawled
             total_discovered = progress_data.total_discovered
@@ -259,12 +268,12 @@ class DocumentationManager:
             completion_percentage = progress_data.completion_percentage
         else:
             # It's a dictionary (fallback)
-            total_crawled = progress_data.get('total_crawled', 0)
-            total_discovered = progress_data.get('total_discovered', 0)
-            elapsed_time = progress_data.get('elapsed_time', 0)
-            pages_per_minute = progress_data.get('pages_per_minute', 0)
-            completion_percentage = progress_data.get('completion_percentage', 0)
-        
+            total_crawled = progress_data.get("total_crawled", 0)
+            total_discovered = progress_data.get("total_discovered", 0)
+            elapsed_time = progress_data.get("elapsed_time", 0)
+            pages_per_minute = progress_data.get("pages_per_minute", 0)
+            completion_percentage = progress_data.get("completion_percentage", 0)
+
         # Calculate remaining time estimate
         if pages_per_minute > 0:
             remaining_urls = total_discovered - total_crawled
@@ -272,20 +281,22 @@ class DocumentationManager:
             time_estimate = f" (~{remaining_minutes:.1f} min remaining)"
         else:
             time_estimate = ""
-        
+
         self.logger.info(
             f"🔄 Crawl Progress: {total_crawled}/{total_discovered} URLs processed "
             f"({completion_percentage:.1f}%) - "
             f"{pages_per_minute:.1f} pages/min{time_estimate}"
         )
 
-    def _create_enhanced_crawl_strategy(self, job: DocumentationJob, structure) -> CrawlStrategy:
+    def _create_enhanced_crawl_strategy(
+        self, job: DocumentationJob, structure
+    ) -> CrawlStrategy:
         """Create enhanced crawling strategy based on structure analysis."""
-        
+
         # Determine strategy based on structure complexity
         total_nodes = len(structure.nodes)
         content_types = len(structure.content_types)
-        
+
         if total_nodes > 200 or content_types > 8:
             strategy_name = "aggressive"
             max_concurrent = 10
@@ -302,24 +313,28 @@ class DocumentationManager:
             strategy_name = "selective"
             max_concurrent = 3
             max_depth = 3
-        
-        self.logger.info(f"Selected {strategy_name} strategy: {max_concurrent} concurrent, depth {max_depth}")
-        
+
+        self.logger.info(
+            f"Selected {strategy_name} strategy: {max_concurrent} concurrent, depth {max_depth}"
+        )
+
         return CrawlStrategy(
             name=strategy_name,
-            max_concurrent_requests=min(max_concurrent, 3),  # Cap at 3 for rate limit respect
+            max_concurrent_requests=min(
+                max_concurrent, 3
+            ),  # Cap at 3 for rate limit respect
             request_delay=2.0,  # Increased delay to be more respectful
             max_depth=max_depth,
             content_quality_threshold=0.6,
             importance_threshold=0.5,
             adaptive_depth=True,
             content_based_filtering=True,
-            relationship_tracking=True
+            relationship_tracking=True,
         )
 
     def _create_empty_crawl_result(self, error_message: str) -> CrawlResult:
         """Create an empty crawl result with error information."""
-        
+
         return CrawlResult(
             discovered_urls=set(),
             crawled_urls=set(),
@@ -335,11 +350,11 @@ class DocumentationManager:
                 "pages_per_minute": 0.0,
                 "completion_percentage": 0.0,
                 "strategy_used": "none",
-                "max_depth_reached": 0
+                "max_depth_reached": 0,
             },
             errors=[error_message],
             warnings=[],
-            success=False
+            success=False,
         )
 
     async def _extract_content(
@@ -369,10 +384,14 @@ class DocumentationManager:
                     doc = await client.scrape_url(url)
                     documents.append(doc)
                     total_content_length += len(doc.content)
-                    
+
                     # Check if result was cached
-                    if hasattr(client, 'is_cached_result') and client.is_cached_result(doc):
-                        self.logger.info(f"⚡ Cached result for {url} (instant response!)")
+                    if hasattr(client, "is_cached_result") and client.is_cached_result(
+                        doc
+                    ):
+                        self.logger.info(
+                            f"⚡ Cached result for {url} (instant response!)"
+                        )
                     else:
                         self.logger.info(f"🆕 Fresh scrape for {url}")
 
@@ -412,8 +431,10 @@ class DocumentationManager:
         # Process each document
         for i, doc in enumerate(documents, 1):
             try:
-                self.logger.info(f"📄 Processing document ({i}/{len(documents)}): {doc.url}")
-                
+                self.logger.info(
+                    f"📄 Processing document ({i}/{len(documents)}): {doc.url}"
+                )
+
                 # Check if processor is async (enhanced) or sync (basic)
                 if hasattr(
                     self.processor, "process_scraped_document"
@@ -435,8 +456,10 @@ class DocumentationManager:
 
                 total_chunks += len(result.chunks)
                 total_content_length += len(doc.content)
-                
-                self.logger.info(f"✅ Processed {doc.url} into {len(result.chunks)} chunks")
+
+                self.logger.info(
+                    f"✅ Processed {doc.url} into {len(result.chunks)} chunks"
+                )
 
                 # Track content type distribution
                 for chunk in result.chunks:
@@ -498,26 +521,27 @@ class DocumentationManager:
                 return windows if windows else [text]
             except Exception:
                 return [text]
+
         for result in processing_results:
             for chunk in result.chunks:
                 # Enhanced metadata for RAG optimization
                 enhanced_metadata = chunk.metadata.copy()
 
                 # Add structure metadata if available
-                if hasattr(chunk, 'structure_metadata'):
+                if hasattr(chunk, "structure_metadata"):
                     enhanced_metadata.update(chunk.structure_metadata)
 
                 # Add semantic metadata if available
-                if hasattr(chunk, 'semantic_metadata'):
+                if hasattr(chunk, "semantic_metadata"):
                     enhanced_metadata.update(chunk.semantic_metadata)
 
                 # Add coverage metadata if available
-                if hasattr(chunk, 'coverage_metadata'):
+                if hasattr(chunk, "coverage_metadata"):
                     enhanced_metadata.update(chunk.coverage_metadata)
 
                 # Ensure content type is set for proper collection selection
-                if 'content_type' not in enhanced_metadata:
-                    enhanced_metadata['content_type'] = 'documents'
+                if "content_type" not in enhanced_metadata:
+                    enhanced_metadata["content_type"] = "documents"
 
                 # Token-aware split if needed
                 pieces = _split_text_by_tokens(chunk.content)
@@ -534,28 +558,34 @@ class DocumentationManager:
         # Generate embeddings in batches to speed up processing
         batch_size = 32
         for i in range(0, len(chunks_to_store), batch_size):
-            batch = chunks_to_store[i:i + batch_size]
+            batch = chunks_to_store[i : i + batch_size]
             texts = [item[0] for item in batch]
 
             try:
                 embeddings = await self.embedding_service.generate_embeddings(texts)
 
                 # Convert numpy array to list for ChromaDB compatibility
-                if hasattr(embeddings, 'tolist'):
+                if hasattr(embeddings, "tolist"):
                     embeddings = embeddings.tolist()
 
                 # Ensure we have a list of vectors (each a flat list of floats)
                 documents_payload = []
                 for (content, metadata), embedding in zip(batch, embeddings):
                     # Some backends may return nested lists for single vectors
-                    if isinstance(embedding, list) and embedding and isinstance(embedding[0], list):
+                    if (
+                        isinstance(embedding, list)
+                        and embedding
+                        and isinstance(embedding[0], list)
+                    ):
                         embedding = embedding[0]
 
-                    documents_payload.append({
-                        "content": content,
-                        "metadata": metadata,
-                        "embedding": embedding,
-                    })
+                    documents_payload.append(
+                        {
+                            "content": content,
+                            "metadata": metadata,
+                            "embedding": embedding,
+                        }
+                    )
 
                 chunk_ids = await self.vector_store.add_documents(documents_payload)
                 stored_chunks.extend(chunk_ids)
@@ -606,25 +636,27 @@ class DocumentationManager:
             "total_chunks": total_chunks,
             "total_content_length": total_content_length,
             "content_type_distribution": content_type_distribution,
-            "average_chunks_per_document": total_chunks / len(documents)
-            if documents
-            else 0,
+            "average_chunks_per_document": (
+                total_chunks / len(documents) if documents else 0
+            ),
             "token_over_limit_chunks": token_over_limit_chunks,
             "token_split_segments": token_split_segments,
             "embedding_max_length": max_len,
-            "enhanced_metadata": enhanced_metadata_aggregated
-            if enhanced_metadata_aggregated
-            else None,
+            "enhanced_metadata": (
+                enhanced_metadata_aggregated if enhanced_metadata_aggregated else None
+            ),
         }
 
         storage_stats = {
             "stored_chunks": len(stored_chunks),
-            "storage_success_rate": len(stored_chunks) / total_chunks
-            if total_chunks > 0
-            else 0,
+            "storage_success_rate": (
+                len(stored_chunks) / total_chunks if total_chunks > 0 else 0
+            ),
         }
-        
-        self.logger.info(f"🎉 Ingestion complete! Stored {len(stored_chunks)} chunks with {storage_stats['storage_success_rate']:.1%} success rate")
+
+        self.logger.info(
+            f"🎉 Ingestion complete! Stored {len(stored_chunks)} chunks with {storage_stats['storage_success_rate']:.1%} success rate"
+        )
 
         return processing_stats, storage_stats
 

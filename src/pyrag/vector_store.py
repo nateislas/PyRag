@@ -49,7 +49,9 @@ class VectorStore:
         # Specialized collections for different content types (enhanced RAG collections)
         self.api_reference_collection = self.client.get_or_create_collection(
             name="api_reference",
-            metadata={"description": "API reference documentation with class/function details"},
+            metadata={
+                "description": "API reference documentation with class/function details"
+            },
         )
 
         self.tutorials_collection = self.client.get_or_create_collection(
@@ -58,7 +60,7 @@ class VectorStore:
         )
 
         self.examples_collection = self.client.get_or_create_collection(
-            name="examples", 
+            name="examples",
             metadata={"description": "Code examples and snippets"},
         )
 
@@ -83,7 +85,7 @@ class VectorStore:
         )
 
         self.overview_collection = self.client.get_or_create_collection(
-            name="overview", 
+            name="overview",
             metadata={"description": "Library overviews and getting started guides"},
         )
 
@@ -100,12 +102,12 @@ class VectorStore:
             "changelog": self.changelog_collection,
             "overview": self.overview_collection,
             "installation": self.overview_collection,  # Map to overview
-            "home": self.overview_collection,          # Map to overview
-            "section": self.overview_collection,       # Map to overview
-            "subsection": self.overview_collection,    # Map to overview
-            "detail": self.documents_collection,       # Map to main documents
+            "home": self.overview_collection,  # Map to overview
+            "section": self.overview_collection,  # Map to overview
+            "subsection": self.overview_collection,  # Map to overview
+            "detail": self.documents_collection,  # Map to main documents
         }
-        
+
         return content_type_mapping.get(content_type, self.documents_collection)
 
     def _generate_id(self, content: str, metadata: Dict[str, Any]) -> str:
@@ -124,30 +126,47 @@ class VectorStore:
             elif isinstance(value, list):
                 # Convert lists to JSON strings
                 import json
+
                 prepared[key] = json.dumps(value)
             elif isinstance(value, dict):
                 # Convert nested dictionaries to JSON strings for complex metadata
                 import json
+
                 prepared[key] = json.dumps(value)
             else:
                 prepared[key] = value
-        
+
         # Ensure enhanced RAG metadata fields are present
         enhanced_fields = [
-            "content_quality_score", "semantic_topics", "code_examples", 
-            "api_signature", "deprecated", "complexity_level", "last_updated",
-            "relationship_metadata", "coverage_metadata", "importance_score", 
-            "completeness_score"
+            "content_quality_score",
+            "semantic_topics",
+            "code_examples",
+            "api_signature",
+            "deprecated",
+            "complexity_level",
+            "last_updated",
+            "relationship_metadata",
+            "coverage_metadata",
+            "importance_score",
+            "completeness_score",
         ]
-        
+
         for field in enhanced_fields:
             if field not in prepared:
                 # Set default values for missing enhanced fields
-                if field in ["content_quality_score", "importance_score", "completeness_score"]:
+                if field in [
+                    "content_quality_score",
+                    "importance_score",
+                    "completeness_score",
+                ]:
                     prepared[field] = 0.0
                 elif field in ["code_examples", "deprecated"]:
                     prepared[field] = False
-                elif field in ["semantic_topics", "relationship_metadata", "coverage_metadata"]:
+                elif field in [
+                    "semantic_topics",
+                    "relationship_metadata",
+                    "coverage_metadata",
+                ]:
                     prepared[field] = "[]"  # Empty JSON array
                 elif field == "complexity_level":
                     prepared[field] = "intermediate"
@@ -155,7 +174,7 @@ class VectorStore:
                     prepared[field] = ""
                 elif field == "last_updated":
                     prepared[field] = ""
-        
+
         return prepared
 
     def _restore_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
@@ -164,14 +183,19 @@ class VectorStore:
         for key, value in metadata.items():
             # Fields that should be converted from JSON strings back to Python objects
             json_fields = [
-                "hierarchy_path", "semantic_topics", "relationship_metadata", 
-                "coverage_metadata", "children", "siblings"
+                "hierarchy_path",
+                "semantic_topics",
+                "relationship_metadata",
+                "coverage_metadata",
+                "children",
+                "siblings",
             ]
-            
+
             if key in json_fields and isinstance(value, str):
                 # Convert JSON strings back to Python objects
                 try:
                     import json
+
                     restored[key] = json.loads(value)
                 except (json.JSONDecodeError, TypeError):
                     restored[key] = value
@@ -184,44 +208,49 @@ class VectorStore:
     ) -> List[str]:
         """Add documents to the vector store with intelligent collection selection."""
         self.logger.info(f"Adding {len(documents)} documents to vector store")
-        
+
         # If no specific collection is specified, use intelligent selection
         if collection_name == "documents":
             # Group documents by content type for optimal storage
             documents_by_type = self._group_documents_by_content_type(documents)
-            
+
             all_ids = []
             for content_type, type_docs in documents_by_type.items():
                 collection = self._get_collection_by_content_type(content_type)
-                type_ids = await self._add_documents_to_collection(type_docs, collection, content_type)
+                type_ids = await self._add_documents_to_collection(
+                    type_docs, collection, content_type
+                )
                 all_ids.extend(type_ids)
-            
+
             return all_ids
         else:
             # Use specified collection
             collection = self._get_collection(collection_name)
-            return await self._add_documents_to_collection(documents, collection, collection_name)
+            return await self._add_documents_to_collection(
+                documents, collection, collection_name
+            )
 
-    def _group_documents_by_content_type(self, documents: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+    def _group_documents_by_content_type(
+        self, documents: List[Dict[str, Any]]
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """Group documents by their content type for optimal collection storage."""
         grouped = {}
-        
+
         for doc in documents:
             content_type = doc.get("metadata", {}).get("content_type", "documents")
             if content_type not in grouped:
                 grouped[content_type] = []
             grouped[content_type].append(doc)
-        
+
         return grouped
 
     async def _add_documents_to_collection(
-        self, 
-        documents: List[Dict[str, Any]], 
-        collection, 
-        collection_name: str
+        self, documents: List[Dict[str, Any]], collection, collection_name: str
     ) -> List[str]:
         """Add documents to a specific collection with enhanced metadata processing."""
-        self.logger.info(f"Adding {len(documents)} documents to {collection_name} collection")
+        self.logger.info(
+            f"Adding {len(documents)} documents to {collection_name} collection"
+        )
 
         # Prepare documents for ChromaDB
         ids = []
@@ -233,7 +262,7 @@ class VectorStore:
             doc_id = self._generate_id(doc["content"], doc["metadata"])
             ids.append(doc_id)
             texts.append(doc["content"])
-            
+
             # Prepare metadata for ChromaDB with enhanced RAG support
             prepared_metadata = self._prepare_metadata(doc["metadata"])
             metadatas.append(prepared_metadata)
@@ -286,11 +315,16 @@ class VectorStore:
             # Generate query embedding using our embedding service for consistent behavior
             try:
                 from .embeddings import EmbeddingService
+
                 query_embedding = EmbeddingService().generate_embeddings_sync(query)
                 # Ensure 1D list of floats
-                if hasattr(query_embedding, 'tolist'):
+                if hasattr(query_embedding, "tolist"):
                     query_embedding = query_embedding.tolist()
-                if isinstance(query_embedding, list) and len(query_embedding) > 0 and isinstance(query_embedding[0], list):
+                if (
+                    isinstance(query_embedding, list)
+                    and len(query_embedding) > 0
+                    and isinstance(query_embedding[0], list)
+                ):
                     query_embedding = query_embedding[0]
                 search_kwargs["query_embeddings"] = [query_embedding]
             except Exception:
@@ -311,9 +345,11 @@ class VectorStore:
                         "id": results["ids"][0][i],
                         "content": results["documents"][0][i],
                         "metadata": metadata,
-                        "distance": results["distances"][0][i]
-                        if "distances" in results
-                        else None,
+                        "distance": (
+                            results["distances"][0][i]
+                            if "distances" in results
+                            else None
+                        ),
                     }
                 )
 
@@ -414,13 +450,13 @@ class VectorStore:
     async def reset_collections(self):
         """Reset all collections to handle embedding dimension changes."""
         self.logger.info("Resetting all collections for new embedding dimensions")
-        
+
         # Delete existing collections
         collections = self.client.list_collections()
         for collection in collections:
             self.client.delete_collection(name=collection.name)
             self.logger.info(f"Deleted collection: {collection.name}")
-        
+
         # Recreate collections
         self._setup_collections()
         self.logger.info("Collections reset and recreated successfully")

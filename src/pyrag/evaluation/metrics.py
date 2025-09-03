@@ -246,12 +246,16 @@ class EvaluationMetrics:
             "difficulty_breakdown": self.difficulty_scores,
             "score_distributions": self.score_distribution,
             "evaluation_info": {
-                "started": self.evaluation_started.isoformat()
-                if self.evaluation_started
-                else None,
-                "completed": self.evaluation_completed.isoformat()
-                if self.evaluation_completed
-                else None,
+                "started": (
+                    self.evaluation_started.isoformat()
+                    if self.evaluation_started
+                    else None
+                ),
+                "completed": (
+                    self.evaluation_completed.isoformat()
+                    if self.evaluation_completed
+                    else None
+                ),
                 "duration_seconds": round(self.evaluation_duration_seconds, 2),
             },
         }

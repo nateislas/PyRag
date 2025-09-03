@@ -123,12 +123,12 @@ class EnhancedDocumentProcessor:
 
         # Step 3: Calculate final statistics
         processing_stats["total_enhanced_chunks"] = len(enhanced_chunks)
-        processing_stats[
-            "average_metadata_completeness"
-        ] = self._calculate_metadata_completeness(enhanced_chunks)
-        processing_stats[
-            "content_type_distribution"
-        ] = self._calculate_content_type_distribution(enhanced_chunks)
+        processing_stats["average_metadata_completeness"] = (
+            self._calculate_metadata_completeness(enhanced_chunks)
+        )
+        processing_stats["content_type_distribution"] = (
+            self._calculate_content_type_distribution(enhanced_chunks)
+        )
 
         return EnhancedProcessingResult(
             chunks=enhanced_chunks, processing_stats=processing_stats, metadata=metadata
@@ -156,7 +156,9 @@ class EnhancedDocumentProcessor:
                     )
                     example_chunks.append(example_chunk)
                 # Use the first example chunk as the primary example_chunk
-                content_processing["example_chunk"] = example_chunks[0] if example_chunks else None
+                content_processing["example_chunk"] = (
+                    example_chunks[0] if example_chunks else None
+                )
 
         elif semantic_chunk.chunk_type == "class":
             # Process as API documentation
@@ -383,9 +385,11 @@ class EnhancedDocumentProcessor:
             "importance_score": enhanced_chunk.enhanced_metadata.importance_score,
             "has_examples": bool(enhanced_chunk.enhanced_metadata.examples),
             "has_parameters": bool(enhanced_chunk.enhanced_metadata.parameters),
-            "is_deprecated": enhanced_chunk.api_doc_chunk.deprecation_info.get(
-                "is_deprecated", False
-            )
-            if enhanced_chunk.api_doc_chunk
-            else False,
+            "is_deprecated": (
+                enhanced_chunk.api_doc_chunk.deprecation_info.get(
+                    "is_deprecated", False
+                )
+                if enhanced_chunk.api_doc_chunk
+                else False
+            ),
         }

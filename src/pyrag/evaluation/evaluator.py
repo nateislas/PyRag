@@ -185,12 +185,16 @@ class RAGEvaluator:
             search_results = await self.search_engine.search(
                 query=test_case.query,
                 n_results=5,
-                library=test_case.expected_libraries[0]
-                if test_case.expected_libraries
-                else None,
-                content_type=test_case.expected_content_types[0]
-                if test_case.expected_content_types
-                else None,
+                library=(
+                    test_case.expected_libraries[0]
+                    if test_case.expected_libraries
+                    else None
+                ),
+                content_type=(
+                    test_case.expected_content_types[0]
+                    if test_case.expected_content_types
+                    else None
+                ),
             )
 
             # Extract response and metadata
@@ -376,9 +380,11 @@ class RAGEvaluator:
             writer.writerow(
                 [
                     result.test_case.id,
-                    result.test_case.query[:50] + "..."
-                    if len(result.test_case.query) > 50
-                    else result.test_case.query,
+                    (
+                        result.test_case.query[:50] + "..."
+                        if len(result.test_case.query) > 50
+                        else result.test_case.query
+                    ),
                     result.test_case.category.value,
                     result.test_case.difficulty.value,
                     result.relevance_score or "N/A",

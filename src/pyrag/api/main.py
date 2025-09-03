@@ -1,5 +1,7 @@
 """Main FastAPI application for PyRAG."""
 
+import asyncio
+import os
 from contextlib import asynccontextmanager
 from typing import Any, Dict
 
@@ -15,24 +17,86 @@ from ..logging import get_logger, setup_logging
 setup_logging()
 logger = get_logger(__name__)
 
+# Global variable to store MCP server task
+_mcp_server_task = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager."""
+    global _mcp_server_task
+
     # Startup
     logger.info("Starting PyRAG API server")
     try:
         # Create database tables
         create_tables()
         logger.info("Database tables created successfully")
+
+        # Start MCP server if configured for HTTP transport
+        if os.getenv("MCP_TRANSPORT", "stdio").lower() == "http":
+            logger.info("Starting MCP server in HTTP mode")
+            import os
+            from pathlib import Path
+
+            from ..mcp.server import mcp
+
+            host = os.getenv("MCP_HOST", "0.0.0.0")
+            port = int(os.getenv("MCP_PORT", "8002"))
+            enable_https = os.getenv("MCP_ENABLE_HTTPS", "false").lower() == "true"
+
+            if enable_https:
+                logger.info("Starting MCP server with HTTPS")
+                # Use uvicorn with SSL configuration
+                import uvicorn
+
+                cert_path = Path("certs/mcp_server.crt")
+                key_path = Path("certs/mcp_server.key")
+
+                if not cert_path.exists() or not key_path.exists():
+                    logger.error(
+                        "SSL certificates not found. Please run tools/generate_ssl_certs.py first"
+                    )
+                    raise RuntimeError("SSL certificates not found")
+
+                # Create FastAPI app from MCP server
+                app = mcp.http_app()
+
+                # Run with HTTPS
+                uvicorn_config = {
+                    "ssl_keyfile": str(key_path),
+                    "ssl_certfile": str(cert_path),
+                    "ssl_version": "TLSv1_2",
+                }
+
+                logger.info(f"Starting MCP server on {host}:{port} with HTTPS")
+                _mcp_server_task = asyncio.create_task(
+                    uvicorn.run(app, host=host, port=port, **uvicorn_config)
+                )
+            else:
+                logger.info(f"Starting MCP server on {host}:{port} with HTTP")
+                _mcp_server_task = asyncio.create_task(mcp.run(host=host, port=port))
+
+            logger.info("MCP server started successfully")
+
     except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
+        logger.error(f"Failed to start services: {e}")
         raise
 
     yield
 
     # Shutdown
     logger.info("Shutting down PyRAG API server")
+
+    # Stop MCP server if running
+    if _mcp_server_task and not _mcp_server_task.done():
+        logger.info("Stopping MCP server")
+        _mcp_server_task.cancel()
+        try:
+            await _mcp_server_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("MCP server stopped")
 
 
 # Create FastAPI application

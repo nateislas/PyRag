@@ -269,7 +269,7 @@ class EnhancedDocumentationProcessor:
                 metadata["return_types"].append(chunk.enhanced_metadata.return_type)
             if chunk.enhanced_metadata.examples:
                 metadata["examples"].extend(chunk.enhanced_metadata.examples)
-            
+
             # Collect relationships from semantic chunk
             if chunk.semantic_chunk.relationships:
                 metadata["relationships"].extend(chunk.semantic_chunk.relationships)
@@ -401,8 +401,8 @@ class EnhancedDocumentationProcessor:
             "total_enhanced_chunks": total_enhanced_chunks,
             "content_type_distribution": content_types,
             "enhanced_chunk_type_distribution": chunk_types,
-            "average_chunks_per_document": total_chunks / len(results)
-            if results
-            else 0,
+            "average_chunks_per_document": (
+                total_chunks / len(results) if results else 0
+            ),
             "enhanced_processing_success_rate": 1.0 if results else 0,
         }

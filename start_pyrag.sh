@@ -27,8 +27,18 @@ echo "🔧 Starting PyRAG services..."
 echo "   - PostgreSQL with pgvector"
 echo "   - Redis for caching"
 echo "   - ChromaDB for vector storage"
-echo "   - PyRAG API (includes MCP server)"
+echo "   - PyRAG API (includes MCP server with HTTPS)"
 echo "   - Celery Worker for background tasks"
+
+# Generate SSL certificates if they don't exist
+if [ ! -f "certs/mcp_server.crt" ] || [ ! -f "certs/mcp_server.key" ]; then
+    echo "🔐 Generating SSL certificates for MCP server..."
+    python tools/generate_ssl_certs.py
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to generate SSL certificates. Please check OpenSSL installation."
+        exit 1
+    fi
+fi
 
 # Start services
 docker-compose up -d
@@ -47,7 +57,7 @@ echo ""
 echo "📋 Access Points:"
 echo "   - FastAPI: http://localhost:8000"
 echo "   - Health Check: http://localhost:8000/health"
-echo "   - MCP Server: Integrated with FastAPI"
+echo "   - MCP Server: https://localhost:8002 (HTTPS)"
 echo ""
 echo "📖 View logs: docker-compose logs -f pyrag-api"
 echo "🛑 Stop services: docker-compose down"
@@ -56,3 +66,6 @@ echo "⏱️  Initialization takes about 30 seconds for ML models to load..."
 echo "✅ Your MCP server will be ready when you see 'PyRAG system initialized and ready'"
 echo ""
 echo "🚀 Ready to connect with Cursor/Claude!"
+echo ""
+echo "🔐 IMPORTANT: Use https://localhost:8002 in Claude's MCP connector"
+echo "   (Claude requires HTTPS for security reasons)"

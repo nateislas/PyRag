@@ -666,11 +666,11 @@ class EnhancedSearchEngine:
         return {
             "total_results": total,
             "distribution": distribution,
-            "primary_content_type": max(
-                content_type_counts.items(), key=lambda x: x[1]
-            )[0]
-            if content_type_counts
-            else None,
+            "primary_content_type": (
+                max(content_type_counts.items(), key=lambda x: x[1])[0]
+                if content_type_counts
+                else None
+            ),
         }
 
     def _analyze_quality_distribution(
