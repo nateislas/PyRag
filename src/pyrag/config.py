@@ -1,6 +1,7 @@
 """Configuration management for PyRAG."""
 
 import os
+from pathlib import Path
 from dataclasses import dataclass
 from typing import Optional
 
@@ -35,6 +36,10 @@ class VectorStoreConfig:
 
     db_path: str = "./chroma_db"
     collection_name: str = "documents"
+    use_cloud: bool = False
+    cloud_api_key: Optional[str] = None
+    cloud_tenant_id: Optional[str] = None
+    cloud_database: Optional[str] = None
 
 
 @dataclass
@@ -91,9 +96,24 @@ def get_config() -> PyRAGConfig:
     )
 
     # Vector Store Configuration
+    # Resolve DB path to an absolute path under the project root by default
+    project_root = Path(__file__).resolve().parents[2]
+    env_db_path = os.getenv("CHROMA_DB_PATH")
+    if env_db_path:
+        db_path_candidate = Path(env_db_path)
+        if not db_path_candidate.is_absolute():
+            db_path_candidate = project_root / db_path_candidate
+        resolved_db_path = str(db_path_candidate)
+    else:
+        resolved_db_path = str(project_root / "chroma_db")
+
     vector_store_config = VectorStoreConfig(
-        db_path=os.getenv("CHROMA_DB_PATH", "./chroma_db"),
+        db_path=resolved_db_path,
         collection_name=os.getenv("CHROMA_COLLECTION", "documents"),
+        use_cloud=os.getenv("CHROMA_CLOUD", "false").lower() == "true",
+        cloud_api_key=os.getenv("CHROMA_CLOUD_API_KEY"),
+        cloud_tenant_id=os.getenv("CHROMA_TENANT_ID"),
+        cloud_database=os.getenv("CHROMA_DATABASE"),
     )
 
     # Embedding Configuration

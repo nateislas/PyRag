@@ -24,14 +24,27 @@ class VectorStore:
         # Get configuration
         config = get_config()
 
-        # Initialize ChromaDB client
-        self.client = chromadb.PersistentClient(
-            path=config.vector_store.db_path,
-            settings=Settings(
-                anonymized_telemetry=False,
-                allow_reset=True,
-            ),
-        )
+        # Initialize ChromaDB client (Cloud or local)
+        if getattr(config.vector_store, "use_cloud", False):
+            self.logger.info("Using Chroma Cloud client")
+            try:
+                self.client = chromadb.CloudClient(
+                    api_key=config.vector_store.cloud_api_key or "",
+                    tenant=config.vector_store.cloud_tenant_id or "",
+                    database=config.vector_store.cloud_database or "",
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Chroma Cloud client: {e}")
+                raise
+        else:
+            self.logger.info("Using local Chroma PersistentClient")
+            self.client = chromadb.PersistentClient(
+                path=config.vector_store.db_path,
+                settings=Settings(
+                    anonymized_telemetry=False,
+                    allow_reset=True,
+                ),
+            )
 
         # Initialize embedding service once (shared instance)
         try:
@@ -42,62 +55,16 @@ class VectorStore:
             self.logger.warning(f"Failed to initialize embedding service: {e}")
             self.embedding_service = None
 
-        # Get or create collections
+        # Get or create main collection only
         self._setup_collections()
 
         self.logger.info("Vector store initialized successfully")
 
     def _setup_collections(self):
-        """Set up ChromaDB collections with specialized content type collections for enhanced RAG."""
-        # Main collection for all documents
+        """Set up a single ChromaDB collection used for all content."""
         self.documents_collection = self.client.get_or_create_collection(
             name="documents",
-            metadata={"description": "Main document collection for PyRAG"},
-        )
-
-        # Specialized collections for different content types (enhanced RAG collections)
-        self.api_reference_collection = self.client.get_or_create_collection(
-            name="api_reference",
-            metadata={
-                "description": (
-                    "API reference documentation with class/function details"
-                )
-            },
-        )
-
-        self.tutorials_collection = self.client.get_or_create_collection(
-            name="tutorials",
-            metadata={"description": "Step-by-step guides and tutorials"},
-        )
-
-        self.examples_collection = self.client.get_or_create_collection(
-            name="examples",
-            metadata={"description": "Code examples and snippets"},
-        )
-
-        self.concepts_collection = self.client.get_or_create_collection(
-            name="concepts",
-            metadata={"description": "Core concepts and theoretical documentation"},
-        )
-
-        self.configuration_collection = self.client.get_or_create_collection(
-            name="configuration",
-            metadata={"description": "Setup, configuration, and options documentation"},
-        )
-
-        self.troubleshooting_collection = self.client.get_or_create_collection(
-            name="troubleshooting",
-            metadata={"description": "FAQ, debugging, and support documentation"},
-        )
-
-        self.changelog_collection = self.client.get_or_create_collection(
-            name="changelog",
-            metadata={"description": "Version history and release notes"},
-        )
-
-        self.overview_collection = self.client.get_or_create_collection(
-            name="overview",
-            metadata={"description": "Library overviews and getting started guides"},
+            metadata={"description": "Unified document collection for PyRAG"},
         )
 
     def _get_collection_by_content_type(self, content_type: str):
@@ -212,28 +179,11 @@ class VectorStore:
         """Add documents to the vector store with intelligent collection selection."""
         self.logger.info(f"Adding {len(documents)} documents to vector store")
 
-        # If no specific collection is specified, use intelligent selection
-        if collection_name == "documents":
-            # Group documents by content type for optimal storage
-            documents_by_type = (
-                self._group_documents_by_content_type(documents)
-            )
-
-            all_ids = []
-            for content_type, type_docs in documents_by_type.items():
-                collection = self._get_collection_by_content_type(content_type)
-                type_ids = await self._add_documents_to_collection(
-                    type_docs, collection, content_type
-                )
-                all_ids.extend(type_ids)
-
-            return all_ids
-        else:
-            # Use specified collection
-            collection = self._get_collection(collection_name)
-            return await self._add_documents_to_collection(
-                documents, collection, collection_name
-            )
+        # Always store in the unified documents collection
+        collection = self._get_collection("documents")
+        return await self._add_documents_to_collection(
+            documents, collection, "documents"
+        )
 
     def _group_documents_by_content_type(
         self, documents: List[Dict[str, Any]]
@@ -417,18 +367,8 @@ class VectorStore:
         return True
 
     def _get_collection(self, collection_name: str):
-        """Get a ChromaDB collection by name."""
-        if collection_name == "documents":
-            return self.documents_collection
-        elif collection_name == "api_reference":
-            return self.api_reference_collection
-        elif collection_name == "examples":
-            return self.examples_collection
-        elif collection_name == "overview":
-            return self.overview_collection
-        else:
-            # Try to get or create a custom collection
-            return self.client.get_or_create_collection(name=collection_name)
+        """Get the unified ChromaDB collection (single-collection design)."""
+        return self.documents_collection
 
     async def get_collection_stats(
         self, collection_name: str = "documents"

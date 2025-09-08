@@ -31,8 +31,8 @@ class EmbeddingService:
             config = get_config()
 
         self.config = config.embedding
-        # Fast, 384-dim model
-        self.model_name = "sentence-transformers/all-MiniLM-L6-v2"
+        # Use configured model name (defaults handled in config)
+        self.model_name = self.config.model_name
         self.model = None
         self.logger = logger
 
