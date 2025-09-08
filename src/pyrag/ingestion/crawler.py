@@ -81,8 +81,8 @@ class CrawlResult:
     success: bool
 
 
-class IntelligentCrawler:
-    """Intelligent crawler that adapts to documentation structure and content quality."""
+class Crawler:
+    """Crawler that adapts to documentation structure and content quality."""
 
     def __init__(
         self,

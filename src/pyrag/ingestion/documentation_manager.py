@@ -13,12 +13,12 @@ from ..embeddings import EmbeddingService
 from ..llm.client import LLMClient
 from ..logging import get_logger
 from ..vector_store import VectorStore
-from .enhanced_documentation_processor import (
-    EnhancedDocumentationProcessor,
-    EnhancedProcessingResult,
+from .document_processor import (
+    DocumentProcessor,
+    ProcessingResult,
 )
 from .crawl4ai_client import Crawl4AIClient, ScrapedDocument
-from .intelligent_crawler import CrawlResult, CrawlStrategy, IntelligentCrawler
+from .crawler import CrawlResult, CrawlStrategy, Crawler
 from .sitemap_analyzer import SitemapAnalyzer
 from .structure_mapper import DocumentationStructureMapper
 from .metadata_sanitizer import MetadataSanitizer, sanitize_metadata
@@ -77,9 +77,9 @@ class DocumentationManager:
                 "LLM client is required for enhanced documentation processing"
             )
 
-        self.processor = EnhancedDocumentationProcessor(llm_client=llm_client)
+        self.processor = DocumentProcessor(llm_client=llm_client)
         self.logger.info(
-            "Using enhanced documentation processor with semantic chunking"
+            "Using documentation processor with semantic chunking"
         )
 
         # Initialize metadata sanitizer for ChromaDB compatibility
@@ -236,12 +236,12 @@ class DocumentationManager:
             )
 
             # Step 3: Create intelligent crawling strategy based on structure
-            strategy = self._create_enhanced_crawl_strategy(job, structure)
+            strategy = self._create_crawl_strategy(job, structure)
 
-            # Step 4: Execute enhanced crawling with our discovered URLs
-            self.logger.info("Executing enhanced crawling with discovered URLs...")
+            # Step 4: Execute crawling with our discovered URLs
+            self.logger.info("Executing crawling with discovered URLs...")
 
-            crawler = IntelligentCrawler(
+            crawler = Crawler(
                 strategy=strategy, progress_callback=self._log_crawl_progress
             )
 
@@ -254,12 +254,12 @@ class DocumentationManager:
             )
 
             self.logger.info(
-                f"Enhanced crawling completed: {len(crawl_result.discovered_urls)} URLs discovered"
+                f"Crawling completed: {len(crawl_result.discovered_urls)} URLs discovered"
             )
             return crawl_result
 
         except Exception as e:
-            self.logger.error(f"Enhanced discovery failed: {e}")
+            self.logger.error(f"Discovery failed: {e}")
             return self._create_empty_crawl_result(f"Discovery failed: {e}")
 
     def _log_crawl_progress(self, progress_data):
@@ -294,10 +294,10 @@ class DocumentationManager:
             f"{pages_per_minute:.1f} pages/min{time_estimate}"
         )
 
-    def _create_enhanced_crawl_strategy(
+    def _create_crawl_strategy(
         self, job: DocumentationJob, structure
     ) -> CrawlStrategy:
-        """Create enhanced crawling strategy based on structure analysis."""
+        """Create crawling strategy based on structure analysis."""
 
         # Determine strategy based on structure complexity
         total_nodes = len(structure.nodes)

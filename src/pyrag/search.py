@@ -1,4 +1,4 @@
-"""Enhanced search engine for PyRAG using ChromaDB with query expansion and reranking."""
+"""Search engine for PyRAG using ChromaDB with query expansion and reranking."""
 
 from typing import Any, Dict, List, Optional
 from .logging import get_logger
@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 
 class SimpleSearchEngine:
-    """Enhanced search engine with query expansion, reformulation, and intelligent reranking."""
+    """Search engine with query expansion, reformulation, and reranking."""
 
     def __init__(self, vector_store, embedding_service, llm_client=None, relationship_manager=None):
         """Initialize the enhanced search engine."""
@@ -25,8 +25,8 @@ class SimpleSearchEngine:
         content_type: Optional[str] = None,
         max_results: int = 10,
     ) -> List[Dict[str, Any]]:
-        """Enhanced search with query expansion and intelligent reranking."""
-        self.logger.info(f"Enhanced search for query: {query}")
+        """Search with query expansion and reranking."""
+        self.logger.info(f"Search for query: {query}")
         
         # Step 1: Query Analysis and Intent Classification
         query_intent = await self._analyze_query_intent(query, library, content_type)
@@ -68,7 +68,7 @@ class SimpleSearchEngine:
                 "context_expanded": self.relationship_manager is not None
             }
         
-        self.logger.info(f"Enhanced search returned {len(final_results)} results")
+        self.logger.info(f"Search returned {len(final_results)} results")
         return final_results
 
     async def _analyze_query_intent(self, query: str, library: Optional[str], content_type: Optional[str]) -> Dict[str, Any]:
@@ -294,7 +294,7 @@ Return ONLY a JSON array of strings: ["query1", "query2", "query3"]"""
         enhanced_results = []
         
         for result in results:
-            enhanced_score = await self._calculate_enhanced_score(result, original_query, intent)
+            enhanced_score = await self._calculate_score(result, original_query, intent)
             result["enhanced_score"] = enhanced_score
             result["final_score"] = enhanced_score
             enhanced_results.append(result)
@@ -310,8 +310,8 @@ Return ONLY a JSON array of strings: ["query1", "query2", "query3"]"""
         
         return final_results[:max_results]
 
-    async def _calculate_enhanced_score(self, result: Dict[str, Any], query: str, intent: Dict[str, Any]) -> float:
-        """Calculate enhanced score using multiple factors."""
+    async def _calculate_score(self, result: Dict[str, Any], query: str, intent: Dict[str, Any]) -> float:
+        """Calculate score using multiple factors."""
         base_score = result.get("score", 0.5)
         
         # Start with base score

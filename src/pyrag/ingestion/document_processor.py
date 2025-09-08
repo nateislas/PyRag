@@ -13,8 +13,8 @@ logger = get_logger(__name__)
 
 
 @dataclass
-class EnhancedProcessingResult:
-    """Result of enhanced document processing."""
+class ProcessingResult:
+    """Result of document processing."""
 
     chunks: List[DocumentChunk]  # Restored DocumentChunk structure
     metadata: Dict[str, Any]
@@ -22,8 +22,8 @@ class EnhancedProcessingResult:
     enhanced_metadata: Dict[str, Any]  # Rich metadata from enhanced processing
 
 
-class EnhancedDocumentationProcessor:
-    """Optimized documentation processor using single LLM call for RAG-optimized metadata."""
+class DocumentProcessor:
+    """Documentation processor using single LLM call for RAG-optimized metadata."""
 
     def __init__(self, llm_client: Optional[LLMClient] = None):
         self.logger = get_logger(__name__)

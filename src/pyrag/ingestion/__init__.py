@@ -1,22 +1,20 @@
-"""Enhanced documentation ingestion system for comprehensive coverage."""
+"""Documentation ingestion system for comprehensive coverage."""
 
 from .documentation_manager import (
     DocumentationJob,
     DocumentationManager,
     DocumentationResult,
 )
-from .enhanced_documentation_processor import (
-    EnhancedDocumentationProcessor,
-    EnhancedProcessingResult,
+from .document_processor import (
+    DocumentProcessor,
+    ProcessingResult,
 )
 from .crawl4ai_client import Crawl4AIClient, ScrapedDocument
-from .intelligent_crawler import (
+from .crawler import (
     CrawlProgress,
-)
-from .intelligent_crawler import CrawlResult as IntelligentCrawlResult
-from .intelligent_crawler import (
+    CrawlResult,
     CrawlStrategy,
-    IntelligentCrawler,
+    Crawler,
 )
 from .sitemap_analyzer import SitemapAnalysis, SitemapAnalyzer, SitemapEntry
 from .structure_mapper import (
@@ -39,9 +37,9 @@ __all__ = [
     "DocumentationManager",
     "DocumentationJob",
     "DocumentationResult",
-    # Enhanced processing
-    "EnhancedDocumentationProcessor",
-    "EnhancedProcessingResult",
+    # Document processing
+    "DocumentProcessor",
+    "ProcessingResult",
     # Content extraction
     "Crawl4AIClient",
     "ScrapedDocument",
@@ -52,11 +50,11 @@ __all__ = [
     "DocumentationStructureMapper",
     "DocumentationStructure",
     "DocumentationNode",
-    # Intelligent crawling
-    "IntelligentCrawler",
-    "CrawlStrategy",
+    # Web crawling
+    "Crawler",
+    "CrawlStrategy", 
     "CrawlProgress",
-    "IntelligentCrawlResult",
+    "CrawlResult",
     # Metadata sanitization
     "MetadataSanitizer",
     "sanitize_metadata",
