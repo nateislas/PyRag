@@ -1,25 +1,23 @@
-# Core dependencies for PyRAG
-fastapi>=0.104.0
-uvicorn[standard]>=0.24.0
-chromadb>=0.4.0
-pydantic>=2.0.0
-python-dotenv>=1.0.0
-httpx>=0.25.0
-aiofiles>=23.0.0
-python-multipart>=0.0.6
-jinja2>=3.1.0
-markdown>=3.5.0
-beautifulsoup4>=4.12.0
-lxml>=4.9.0
-requests>=2.31.0
-numpy>=1.24.0
-pandas>=2.0.0
-scikit-learn>=1.3.0
+# Core MCP server
 fastmcp>=0.1.0
 structlog>=23.0.0
-websockets>=12.0
+python-dotenv>=1.0.0
 
-# ML dependencies for embeddings
+# Vector store and embeddings
+chromadb>=0.4.0
 sentence-transformers>=2.2.0
 transformers>=4.30.0
 torch>=2.0.0
+numpy>=1.24.0
+
+# Web scraping (ingestion)
+aiohttp>=3.8.0
+beautifulsoup4>=4.12.0
+
+# API server (optional - only if you use the FastAPI endpoints)
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.0.0
+
+# LLM client
+openai>=1.0.0
