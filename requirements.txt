@@ -18,3 +18,8 @@ scikit-learn>=1.3.0
 fastmcp>=0.1.0
 structlog>=23.0.0
 websockets>=12.0
+
+# ML dependencies for embeddings
+sentence-transformers>=2.2.0
+transformers>=4.30.0
+torch>=2.0.0

@@ -15,13 +15,12 @@ src_path = project_root / "src"
 sys.path.insert(0, str(src_path))
 
 # Now we can import pyrag modules
-from pyrag.mcp.server import main
+from pyrag.mcp.server import mcp
 
-if __name__ == "__main__":
-    # Set default environment variables for FastMCP Cloud
-    os.environ.setdefault("MCP_TRANSPORT", "http")
-    os.environ.setdefault("MCP_HOST", "0.0.0.0")
-    os.environ.setdefault("MCP_PORT", "8000")
-    
-    # Run the MCP server
-    asyncio.run(main())
+# Set default environment variables for FastMCP Cloud
+os.environ.setdefault("MCP_TRANSPORT", "http")
+os.environ.setdefault("MCP_HOST", "0.0.0.0")
+os.environ.setdefault("MCP_PORT", "8000")
+
+# Export the FastMCP instance for FastMCP Cloud
+# This is what FastMCP Cloud will use as the entrypoint
