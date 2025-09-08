@@ -7,8 +7,8 @@ import chromadb
 import numpy as np
 from chromadb.config import Settings
 
-from .config import get_config
-from .logging import get_logger
+from ..config import get_config
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 

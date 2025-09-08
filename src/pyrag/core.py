@@ -3,10 +3,10 @@
 from typing import Any, Dict, List, Optional
 
 from .config import get_config
-from .embeddings import EmbeddingService
+from .storage import EmbeddingService
 from .logging import get_logger
-from .search import SimpleSearchEngine
-from .vector_store import VectorStore
+from .search import SearchEngine
+from .storage import VectorStore
 
 logger = get_logger(__name__)
 
@@ -26,7 +26,7 @@ class PyRAG:
         self.embedding_service = EmbeddingService()
 
         # Initialize enhanced search engine with all components
-        self.search_engine = SimpleSearchEngine(
+        self.search_engine = SearchEngine(
             self.vector_store,
             self.embedding_service,
             llm_client=None,  # Will be set when LLM client is available

@@ -12,8 +12,8 @@ import torch
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer
 
-from pyrag.config import get_config
-from pyrag.logging import get_logger
+from ..config import get_config
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 

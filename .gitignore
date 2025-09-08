@@ -236,3 +236,5 @@ __marimo__/
 
 # SSL certificates
 certs/
+tests/
+tests/

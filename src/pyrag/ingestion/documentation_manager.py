@@ -9,10 +9,10 @@ from typing import Any, Dict, List, Optional, Set
 
 import aiohttp
 
-from ..embeddings import EmbeddingService
+from ..storage import EmbeddingService
 from ..llm.client import LLMClient
 from ..logging import get_logger
-from ..vector_store import VectorStore
+from ..storage import VectorStore
 from .document_processor import (
     DocumentProcessor,
     ProcessingResult,

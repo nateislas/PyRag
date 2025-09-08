@@ -1,7 +1,7 @@
 """Search engine for PyRAG using ChromaDB with query expansion and reranking."""
 
 from typing import Any, Dict, List, Optional
-from .logging import get_logger
+from ..logging import get_logger
 
 logger = get_logger(__name__)
 

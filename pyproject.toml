@@ -9,7 +9,7 @@ description = "Python Documentation RAG System for AI Coding Assistants"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
-    {name = "PyRAG Contributors", email = "contributors@pyrag.dev"}
+    {name = "Nathaniel Islas", email = "nathaniel@gmail.com"}
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -24,48 +24,18 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
     "pydantic>=2.5.0",
-    "sqlalchemy>=2.0.0",
-    "alembic>=1.13.0",
-    "psycopg2-binary>=2.9.0",
     "chromadb>=0.4.0",
     "sentence-transformers>=2.2.0",
-    "torch>=2.0.0",  # Required for INT4 quantization
-    "flash-attn>=2.5.6", # Optional but recommended for performance
+    "transformers>=4.30.0",
+    "torch>=2.0.0",
     "openai>=1.0.0",
     "firecrawl-py>=0.1.0",
     "structlog>=23.0.0",
     "python-dotenv>=1.0.0",
-    "httpx>=0.25.0",
-    "asyncio-mqtt>=0.16.0",
-    "paho-mqtt>=1.6.0",
-    "websockets>=12.0",
-    "aiofiles>=23.0.0",
-    "python-multipart>=0.0.6",
-    "jinja2>=3.1.0",
-    "markdown>=3.5.0",
+    "aiohttp>=3.8.0",
     "beautifulsoup4>=4.12.0",
-    "lxml>=4.9.0",
-    "requests>=2.31.0",
-    "numpy>=1.24.0",
-    "pandas>=2.0.0",
-    "scikit-learn>=1.3.0",
-    "matplotlib>=3.7.0",
-    "seaborn>=0.12.0",
-    "plotly>=5.17.0",
-    "jupyter>=1.0.0",
-    "ipython>=8.0.0",
-    "fastmcp>=0.1.0",  # MCP server framework
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "pytest-cov>=4.1.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
-    "mypy>=1.5.0",
-    "pre-commit>=3.4.0",
+    "fastmcp>=0.1.0",
 ]
 
 [project.optional-dependencies]
@@ -73,38 +43,22 @@ dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
-    "pytest-mock>=3.12.0",
     "black>=23.11.0",
     "isort>=5.12.0",
     "flake8>=6.1.0",
     "mypy>=1.7.0",
-    "pre-commit>=3.6.0",
-    "jupyter>=1.0.0",
-    "ipython>=8.17.0",
-    "fastmcp>=0.1.0",  # MCP server framework
 ]
 test = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.1.0",
-    "pytest-mock>=3.12.0",
-    "httpx>=0.25.0",
-    "fakeredis>=2.20.0",
-]
-docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.4.0",
-    "mkdocstrings[python]>=0.24.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/pyrag/pyrag"
-Documentation = "https://pyrag.dev"
-Repository = "https://github.com/pyrag/pyrag"
-"Bug Tracker" = "https://github.com/pyrag/pyrag/issues"
+Repository = "https://github.com/nathanielislas/PyRag"
 
-[project.scripts]
-pyrag = "pyrag.cli:main"
+[project.entry-points."fastmcp"]
+pyrag = "pyrag.mcp.server:mcp"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/pyrag"]
@@ -118,7 +72,6 @@ extend-exclude = '''
   # directories
   \.eggs
   | \.git
-  | \.hg
   | \.mypy_cache
   | \.tox
   | \.venv
@@ -152,8 +105,10 @@ strict_equality = true
 module = [
     "chromadb.*",
     "sentence_transformers.*",
-    "playwright.*",
-    "celery.*",
+    "transformers.*",
+    "torch.*",
+    "firecrawl.*",
+    "fastmcp.*",
 ]
 ignore_missing_imports = true
 
@@ -182,18 +137,14 @@ omit = [
     "*/tests/*",
     "*/test_*",
     "*/__pycache__/*",
-    "*/migrations/*",
 ]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
-    "if self.debug:",
-    "if settings.DEBUG",
     "raise AssertionError",
     "raise NotImplementedError",
-    "if 0:",
     "if __name__ == .__main__.:",
     "class .*\\bProtocol\\):",
     "@(abc\\.)?abstractmethod",
