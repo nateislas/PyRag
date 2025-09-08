@@ -9,7 +9,7 @@ from .enhanced_documentation_processor import (
     EnhancedDocumentationProcessor,
     EnhancedProcessingResult,
 )
-from .firecrawl_client import FirecrawlClient, ScrapedDocument
+from .crawl4ai_client import Crawl4AIClient, ScrapedDocument
 from .intelligent_crawler import (
     CrawlProgress,
 )
@@ -43,7 +43,7 @@ __all__ = [
     "EnhancedDocumentationProcessor",
     "EnhancedProcessingResult",
     # Content extraction
-    "FirecrawlClient",
+    "Crawl4AIClient",
     "ScrapedDocument",
     # Structure analysis
     "SitemapAnalyzer",
