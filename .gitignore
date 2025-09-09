@@ -156,9 +156,6 @@ tools/pipeline/
 tools/testing/
 trash/
 
-# Documentation (development only)
-docs/
-
 # Development and testing artifacts
 reports/
 test_*.py

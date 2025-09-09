@@ -111,8 +111,6 @@ class DocumentationJob:
     base_url: str
     output_dir: str
     max_crawl_depth: int = 3
-    max_crawl_pages: int = 100
-    max_content_pages: int = 50
     use_llm_filtering: bool = True
     exclude_patterns: Optional[List[str]] = None
     include_patterns: Optional[List[str]] = None
@@ -603,11 +601,9 @@ Respond with only "YES" or "NO" for each URL, one per line. YES = documentation,
 
         self.logger.info("🚀 Using Crawl4AI client with parallel processing for content extraction")
 
-        # Limit number of pages to extract (<=0 means no cap)
+        # Extract content from all URLs (intelligent pipeline handles optimization)
         all_urls = list(urls)
-        urls_to_extract = (
-            all_urls if getattr(job, "max_content_pages", 0) <= 0 else all_urls[: job.max_content_pages]
-        )
+        urls_to_extract = all_urls
 
         self.logger.info(f"Extracting content from {len(urls_to_extract)} URLs using parallel processing")
 
