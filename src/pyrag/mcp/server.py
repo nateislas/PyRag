@@ -273,7 +273,7 @@ async def diagnose(
             # Environment variables
             try:
                 env_vars = {}
-                for key in ["CHROMA_CLOUD", "CHROMA_CLOUD_API_KEY", "CHROMA_TENANT_ID", "CHROMA_DATABASE", "LLAMA_API_KEY", "FIRECRAWL_API_KEY"]:
+                for key in ["CHROMA_CLOUD", "CHROMA_CLOUD_API_KEY", "CHROMA_TENANT_ID", "CHROMA_DATABASE", "LLAMA_API_KEY"]:
                     env_vars[key] = "set" if os.getenv(key) else "not_set"
                 health_checks["environment"] = env_vars
             except Exception as e:
