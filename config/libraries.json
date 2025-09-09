@@ -5,574 +5,299 @@
       "url": "https://python.langchain.com/api_reference/langchain/index.html",
       "description": "Framework for developing applications with LLMs - THE MOST IMPORTANT FOR GENAI",
       "category": "ai_ml",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Most comprehensive LLM framework - need full coverage of chains, agents, memory, tools, integrations. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "pydantic",
       "url": "https://docs.pydantic.dev/latest/",
       "description": "Data validation using Python type annotations - ESSENTIAL FOR AI DATA PIPELINES",
       "category": "data_validation",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Comprehensive coverage needed: API docs, concepts, examples, tutorials, configuration, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://docs.pydantic.dev/latest/api/base_model/",
-        "https://docs.pydantic.dev/latest/concepts/models/",
-        "https://docs.pydantic.dev/latest/examples/files/",
-        "https://docs.pydantic.dev/latest/help_with_pydantic/"
-      ]
+      "enabled": true
     },
     {
       "name": "fastapi",
       "url": "https://fastapi.tiangolo.com/",
       "description": "Modern, fast web framework for building APIs - PERFECT FOR AI API ENDPOINTS",
       "category": "web_framework",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Comprehensive coverage needed: tutorials, API reference, advanced topics, examples, deployment patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://fastapi.tiangolo.com/tutorial/",
-        "https://fastapi.tiangolo.com/reference/",
-        "https://fastapi.tiangolo.com/advanced/"
-      ]
+      "enabled": true
     },
     {
       "name": "openai",
       "url": "https://platform.openai.com/docs/api-reference",
       "description": "OpenAI API client - DIRECT INTEGRATION WITH GPT MODELS",
       "category": "ai_ml",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Direct GPT integration - need all models, endpoints, streaming, fine-tuning, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "transformers",
       "url": "https://huggingface.co/docs/transformers/",
       "description": "Hugging Face Transformers - LOCAL LLM DEPLOYMENT AND FINE-TUNING",
       "category": "ai_ml",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Local LLM deployment - need all models, tokenizers, pipelines, training, optimization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "chromadb",
       "url": "https://docs.trychroma.com/",
       "description": "Vector database for AI applications - EMBEDDING STORAGE AND RETRIEVAL",
       "category": "vector_database",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Critical for RAG systems - need full coverage of collections, embeddings, queries, persistence, deployment patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://docs.trychroma.com/getting-started",
-        "https://docs.trychroma.com/guides",
-        "https://docs.trychroma.com/api-reference",
-        "https://docs.trychroma.com/usage-guide"
-      ]
+      "enabled": true
     },
     {
       "name": "llamaindex",
       "url": "https://docs.llamaindex.ai/",
       "description": "Data framework for LLM applications - COMPLEX RAG AND DATA PIPELINES",
       "category": "ai_ml",
-      "expected_complexity": "very_high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Advanced RAG framework that LLMs struggle with - need comprehensive coverage of data connectors, indices, query engines, agents, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://docs.llamaindex.ai/get_started/",
-        "https://docs.llamaindex.ai/use_cases/",
-        "https://docs.llamaindex.ai/module_guides/",
-        "https://docs.llamaindex.ai/examples/"
-      ]
+      "enabled": true
     },
     {
       "name": "streamlit",
       "url": "https://docs.streamlit.io/",
       "description": "Rapid AI app development and deployment - PROTOTYPING TO PRODUCTION",
       "category": "web_framework",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "AI app deployment framework - need tutorials, components, deployment, performance optimization, production patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://docs.streamlit.io/library/get-started",
-        "https://docs.streamlit.io/library/api-reference",
-        "https://docs.streamlit.io/deploy",
-        "https://docs.streamlit.io/knowledge-base"
-      ]
+      "enabled": true
     },
     {
       "name": "gradio",
       "url": "https://www.gradio.app/docs/",
       "description": "Simple ML model deployment interfaces - QUICK AI DEMOS TO PRODUCTION",
       "category": "web_framework",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "ML model deployment framework - need components, interfaces, deployment, hosting, production scaling. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://www.gradio.app/docs/",
-        "https://www.gradio.app/guides/",
-        "https://www.gradio.app/docs/components",
-        "https://www.gradio.app/docs/interface"
-      ]
+      "enabled": true
     },
     {
       "name": "flask",
       "url": "https://flask.palletsprojects.com/",
       "description": "Lightweight web framework - SIMPLE AI API DEPLOYMENT",
       "category": "web_framework",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Simple web framework for AI APIs - need tutorials, extensions, deployment, production patterns, security. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://flask.palletsprojects.com/en/3.0.x/",
-        "https://flask.palletsprojects.com/en/3.0.x/quickstart/",
-        "https://flask.palletsprojects.com/en/3.0.x/deploying/",
-        "https://flask.palletsprojects.com/en/3.0.x/patterns/"
-      ]
+      "enabled": true
     },
     {
       "name": "django",
       "url": "https://docs.djangoproject.com/",
       "description": "Full-featured web framework - ENTERPRISE AI APPLICATIONS",
       "category": "web_framework",
-      "expected_complexity": "very_high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Enterprise web framework for AI apps - need tutorials, models, admin, deployment, production, scaling, security. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://docs.djangoproject.com/en/stable/",
-        "https://docs.djangoproject.com/en/stable/intro/",
-        "https://docs.djangoproject.com/en/stable/topics/",
-        "https://docs.djangoproject.com/en/stable/howto/"
-      ]
+      "enabled": true
     },
     {
       "name": "langsmith",
       "url": "https://docs.smith.langchain.com/",
       "description": "LangChain observability platform - PRODUCTION MONITORING AND DEBUGGING",
       "category": "monitoring",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Critical for production LLM monitoring - need tracing, debugging, evaluation, deployment, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://docs.smith.langchain.com/",
-        "https://docs.smith.langchain.com/tracing",
-        "https://docs.smith.langchain.com/evaluation",
-        "https://docs.smith.langchain.com/deployment"
-      ]
+      "enabled": true
     },
     {
       "name": "prometheus",
       "url": "https://prometheus.io/docs/",
       "description": "Metrics collection and monitoring - INFRASTRUCTURE OBSERVABILITY",
       "category": "monitoring",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Infrastructure monitoring for AI systems - need installation, configuration, metrics, alerting, integration with AI apps. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://prometheus.io/docs/introduction/",
-        "https://prometheus.io/docs/guides/",
-        "https://prometheus.io/docs/prometheus/latest/",
-        "https://prometheus.io/docs/alerting/"
-      ]
+      "enabled": true
     },
     {
       "name": "grafana",
       "url": "https://grafana.com/docs/",
       "description": "Data visualization and monitoring - AI SYSTEM DASHBOARDS",
       "category": "monitoring",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Monitoring dashboards for AI systems - need installation, dashboards, panels, data sources, alerting, AI-specific metrics. Enhanced pipeline will handle intelligent crawling without arbitrary limits.",
-      "coverage_targets": [
-        "https://grafana.com/docs/grafana/",
-        "https://grafana.com/docs/grafana/latest/getting-started/",
-        "https://grafana.com/docs/grafana/latest/dashboards/",
-        "https://grafana.com/docs/grafana/latest/alerting/"
-      ]
+      "enabled": true
     },
     {
       "name": "anthropic",
       "url": "https://docs.anthropic.com/",
       "description": "Anthropic Claude API - ALTERNATIVE LLM PROVIDER",
       "category": "ai_ml",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Claude API integration - need API reference, best practices, safety guidelines, tool use, function calling. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "huggingface_hub",
       "url": "https://huggingface.co/docs/hub/",
       "description": "Hugging Face Hub - MODEL REPOSITORY AND API",
       "category": "ai_ml",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Model repository and API - need model hosting, inference API, datasets, spaces, transformers integration. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "ollama",
       "url": "https://ollama.ai/docs",
       "description": "Local LLM deployment - RUN MODELS LOCALLY",
       "category": "ai_ml",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Local LLM deployment - need installation, model management, API usage, Python client, deployment patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "vllm",
       "url": "https://docs.vllm.ai/",
       "description": "High-performance LLM inference - PRODUCTION LLM SERVING",
       "category": "ai_ml",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "High-performance inference - need installation, model serving, optimization, deployment, API usage. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "autogen",
       "url": "https://microsoft.github.io/autogen/",
       "description": "Multi-agent conversation framework - AUTONOMOUS AI AGENTS",
       "category": "agentic_ai",
-      "expected_complexity": "very_high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Multi-agent framework - need agent types, conversation patterns, tool integration, deployment, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "crewai",
       "url": "https://docs.crewai.com/",
       "description": "Collaborative AI agents - TEAM-BASED AI WORKFLOWS",
       "category": "agentic_ai",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Collaborative agents - need crew creation, agent roles, task management, tool integration, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "langgraph",
       "url": "https://langchain-ai.github.io/langgraph/",
       "description": "Stateful multi-agent workflows - COMPLEX AGENT ORCHESTRATION",
       "category": "agentic_ai",
-      "expected_complexity": "very_high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 1,
-      "enabled": true,
-      "notes": "Stateful agent workflows - need graph construction, state management, conditional logic, tool integration, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "haystack",
       "url": "https://docs.haystack.deepset.ai/",
       "description": "End-to-end NLP framework - COMPREHENSIVE RAG PIPELINES",
       "category": "ai_ml",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "NLP framework - need document processing, retrieval, generation, evaluation, deployment patterns. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "ragas",
       "url": "https://docs.ragas.io/",
       "description": "RAG evaluation framework - MEASURE RAG PERFORMANCE",
       "category": "ai_ml",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "RAG evaluation - need metrics, evaluation methods, benchmarking, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "pinecone",
       "url": "https://docs.pinecone.io/",
       "description": "Managed vector database - CLOUD VECTOR STORAGE",
       "category": "vector_database",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Managed vector DB - need setup, indexing, querying, scaling, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "weaviate",
       "url": "https://weaviate.io/developers/weaviate",
       "description": "Vector database with hybrid search - ADVANCED VECTOR OPERATIONS",
       "category": "vector_database",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Advanced vector DB - need setup, schema design, hybrid search, deployment, optimization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "qdrant",
       "url": "https://qdrant.tech/documentation/",
       "description": "Vector similarity search engine - HIGH-PERFORMANCE VECTOR SEARCH",
       "category": "vector_database",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Vector search engine - need setup, indexing, filtering, deployment, optimization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "celery",
       "url": "https://docs.celeryq.dev/",
       "description": "Distributed task queue - ASYNC AI PROCESSING",
       "category": "backend",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Task queue for AI - need setup, task definition, workers, monitoring, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "redis",
       "url": "https://redis.io/docs/",
       "description": "In-memory data store - CACHING AND SESSION STORAGE",
       "category": "backend",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "In-memory storage - need setup, data types, caching patterns, deployment, optimization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "sqlalchemy",
       "url": "https://docs.sqlalchemy.org/",
       "description": "Python SQL toolkit - DATABASE ORM AND QUERYING",
       "category": "backend",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "SQL toolkit - need ORM usage, query building, relationships, migrations, optimization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "pandas",
       "url": "https://pandas.pydata.org/docs/",
       "description": "Data manipulation and analysis - ESSENTIAL FOR DATA PROCESSING",
       "category": "data_processing",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Data manipulation - need data structures, operations, analysis, performance optimization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "numpy",
       "url": "https://numpy.org/doc/stable/",
       "description": "Numerical computing - FOUNDATION FOR AI/ML",
       "category": "data_processing",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Numerical computing - need arrays, operations, broadcasting, performance, integration. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "airflow",
       "url": "https://airflow.apache.org/docs/",
       "description": "Workflow orchestration - AI PIPELINE MANAGEMENT",
       "category": "data_processing",
-      "expected_complexity": "very_high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Workflow orchestration - need DAG creation, operators, scheduling, monitoring, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "prefect",
       "url": "https://docs.prefect.io/",
       "description": "Modern workflow orchestration - NEXT-GEN PIPELINE MANAGEMENT",
       "category": "data_processing",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Modern orchestration - need flow creation, task management, scheduling, monitoring, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "docker",
       "url": "https://docs.docker.com/",
       "description": "Containerization platform - AI APPLICATION DEPLOYMENT",
       "category": "infrastructure",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Containerization - need image creation, container management, networking, volumes, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "kubernetes",
       "url": "https://kubernetes.io/docs/",
       "description": "Container orchestration - SCALABLE AI DEPLOYMENT",
       "category": "infrastructure",
-      "expected_complexity": "very_high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Container orchestration - need cluster setup, deployments, services, scaling, monitoring. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "aws_sdk",
       "url": "https://boto3.amazonaws.com/v1/documentation/api/latest/index.html",
       "description": "AWS SDK for Python - CLOUD AI SERVICES",
       "category": "cloud",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "AWS integration - need service clients, resource management, deployment, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "google_cloud",
       "url": "https://cloud.google.com/docs",
       "description": "Google Cloud Platform - CLOUD AI SERVICES",
       "category": "cloud",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "GCP integration - need service setup, AI services, deployment, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "azure_sdk",
       "url": "https://docs.microsoft.com/en-us/azure/",
       "description": "Microsoft Azure - CLOUD AI SERVICES",
       "category": "cloud",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Azure integration - need service setup, AI services, deployment, best practices. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "whisper",
       "url": "https://openai.com/research/whisper",
       "description": "Speech recognition - AUDIO PROCESSING FOR AI",
       "category": "ai_ml",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 3,
-      "enabled": true,
-      "notes": "Speech recognition - need installation, usage, fine-tuning, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "opencv",
       "url": "https://docs.opencv.org/",
       "description": "Computer vision library - IMAGE PROCESSING FOR AI",
       "category": "ai_ml",
-      "expected_complexity": "high",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 3,
-      "enabled": true,
-      "notes": "Computer vision - need image processing, object detection, feature extraction, deployment. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "unstructured",
       "url": "https://unstructured-io.github.io/unstructured/",
       "description": "Document parsing - STRUCTURED DATA EXTRACTION",
       "category": "data_processing",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Document parsing - need installation, usage, format support, customization. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     },
     {
       "name": "llamaparse",
       "url": "https://docs.llamaindex.ai/en/stable/examples/data_connectors/LlamaParse/",
       "description": "Advanced document parsing - LLAMAINDEX DOCUMENT PROCESSING",
       "category": "data_processing",
-      "expected_complexity": "medium",
-      "max_crawl_pages": 0,
-      "max_content_pages": 0,
-      "priority": 2,
-      "enabled": true,
-      "notes": "Advanced parsing - need setup, usage, format support, integration with LlamaIndex. Enhanced pipeline will handle intelligent crawling without arbitrary limits."
+      "enabled": true
     }
   ],
   "metadata": {
-    "version": "3.1",
-    "description": "Comprehensive GenAI ecosystem covering AI/ML, agentic AI, backend frameworks, infrastructure, and deployment - merged with coverage targets",
+    "version": "3.4",
+    "description": "Comprehensive GenAI ecosystem - fully streamlined configuration with intelligent pipeline handling",
     "total_libraries": 42,
     "categories": [
       "ai_ml",
