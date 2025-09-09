@@ -36,9 +36,12 @@ class EmbeddingService:
         self.model = None
         self.logger = logger
 
-        # Setup local model cache directory
-        self.model_cache_dir = Path("./models")
-        self.model_cache_dir.mkdir(exist_ok=True)
+        # Setup local model cache directory (only if caching is enabled)
+        if self.config.cache_models_locally:
+            self.model_cache_dir = Path("./models")
+            self.model_cache_dir.mkdir(exist_ok=True)
+        else:
+            self.model_cache_dir = None
 
         # Initialize model
         self._load_model()
@@ -65,7 +68,9 @@ class EmbeddingService:
                 transformer_model, {torch.nn.Linear}, dtype=torch.qint4
             )
 
-            # Save quantized model
+            # Save quantized model (only if caching is enabled)
+            if self.model_cache_dir is None:
+                raise RuntimeError("Cannot save quantized model: caching is disabled")
             quantized_path = str(self.model_cache_dir / f"{Path(model_path).name}_int4")
             Path(quantized_path).mkdir(exist_ok=True)
 
@@ -94,6 +99,8 @@ class EmbeddingService:
     def _load_quantized_model(self, model_path: str) -> bool:
         """Load a locally cached quantized model."""
         try:
+            if self.model_cache_dir is None:
+                return False
             quantized_path = str(
                 self.model_cache_dir
                 / f"{Path(model_path).name.replace('/', '_')}_quantized"
