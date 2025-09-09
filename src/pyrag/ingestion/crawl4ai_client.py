@@ -81,13 +81,20 @@ class Crawl4AIClient:
         try:
             logger.info(f"🌐 Scraping {url} with Crawl4AI (local, fast, unlimited)")
             
-            # Configure crawling options
+            # Configure crawling options - OPTIMIZED for documentation scraping
             crawl_options = {
                 "max_pages": 1,  # Single page for this method
-                "extract_markdown": True,  # Get markdown content
-                "extract_html": True,  # Get HTML for content extraction
-                "memory_ceiling_mb": 100,  # Memory limit
-                "batch_size": 1,  # Single page batch
+                "extract_markdown": True,  # ✅ We need this
+                "extract_html": False,     # ❌ Remove HTML extraction
+                "extract_links": False,    # ❌ Remove link extraction
+                "extract_forms": False,    # ❌ Remove form extraction
+                "extract_tables": False,   # ❌ Remove table extraction
+                "screenshot": False,       # ❌ Remove screenshot capture
+                "memory_ceiling_mb": 10,   # ✅ Much lower memory limit
+                "batch_size": 1,           # Single page batch
+                "wait_for": "networkidle", # ✅ Wait for content to load
+                "timeout": 30000,          # ✅ 30 second timeout
+                "user_agent": "Mozilla/5.0 (compatible; PyRAG/1.0)",  # ✅ Proper UA
             }
             
             # Override with any provided options
@@ -100,21 +107,23 @@ class Crawl4AIClient:
                 **crawl_options
             )
             
-            # Extract content from the result
+            # Extract content from the result - OPTIMIZED
             if hasattr(result, 'markdown') and result.markdown:
                 content = result.markdown
                 markdown = result.markdown
-            elif hasattr(result, 'html') and result.html:
-                content = self._clean_html_content(result.html)
-                markdown = self._html_to_markdown(result.html)
             else:
-                content = "No content extracted"
-                markdown = "# No Content\n\nNo content could be extracted from this page."
+                # Fallback: if markdown extraction failed, try HTML
+                if hasattr(result, 'html') and result.html:
+                    content = self._clean_html_content(result.html)
+                    markdown = self._html_to_markdown(result.html)
+                else:
+                    content = "No content extracted"
+                    markdown = "# No Content\n\nNo content could be extracted from this page."
             
             # Extract title
             title = getattr(result, 'title', url) or url
             
-            # Build metadata
+            # Build metadata - OPTIMIZED (minimal metadata)
             metadata = {
                 "url": url,
                 "title": title,
@@ -123,7 +132,7 @@ class Crawl4AIClient:
                 "cache_hit": False,  # Crawl4AI doesn't have caching like Firecrawl
                 "cache_age_hours": None,
                 "source": "crawl4ai",
-                "extractor": "local"
+                "extractor": "local_optimized"
             }
             
             # Add any additional metadata from the result
@@ -141,7 +150,7 @@ class Crawl4AIClient:
                 content=content,
                 markdown=markdown,
                 metadata=metadata,
-                screenshot_url=getattr(result, 'screenshot', None)
+                screenshot_url=None  # ❌ No screenshots
             )
             
         except Exception as e:
@@ -157,7 +166,7 @@ class Crawl4AIClient:
                     "cache_hit": False,
                     "source": "crawl4ai"
                 },
-                screenshot_url=None,
+                screenshot_url=None,  # ❌ No screenshots
             )
 
     async def crawl_site(
@@ -175,14 +184,20 @@ class Crawl4AIClient:
         try:
             logger.info(f"🕷️  Crawling site {start_url} with Crawl4AI")
             
-            # Configure crawling options
+            # Configure crawling options - OPTIMIZED for documentation scraping
             crawl_options = {
                 "max_pages": options.get("max_pages", 100) if options else 100,
-                "extract_markdown": True,
-                "extract_html": True,
-                "memory_ceiling_mb": options.get("memory_ceiling_mb", 500) if options else 500,
+                "extract_markdown": True,  # ✅ We need this
+                "extract_html": False,     # ❌ Remove HTML extraction
+                "extract_links": False,    # ❌ Remove link extraction
+                "extract_forms": False,    # ❌ Remove form extraction
+                "extract_tables": False,   # ❌ Remove table extraction
+                "screenshot": False,       # ❌ Remove screenshot capture
+                "memory_ceiling_mb": options.get("memory_ceiling_mb", 10) if options else 10,  # ✅ Optimized for memory efficiency
                 "batch_size": options.get("batch_size", 50) if options else 50,
-                "extract_links": True,
+                "wait_for": "networkidle", # ✅ Wait for content to load
+                "timeout": 30000,          # ✅ 30 second timeout
+                "user_agent": "Mozilla/5.0 (compatible; PyRAG/1.0)",  # ✅ Proper UA
             }
             
             # Override with any provided options
@@ -199,21 +214,23 @@ class Crawl4AIClient:
                 urls=[f"{start_url}/*"],
                 **crawl_options
             ):
-                # Extract content
+                # Extract content - OPTIMIZED
                 if hasattr(result, 'markdown') and result.markdown:
                     content = result.markdown
                     markdown = result.markdown
-                elif hasattr(result, 'html') and result.html:
-                    content = self._clean_html_content(result.html)
-                    markdown = self._html_to_markdown(result.html)
                 else:
-                    content = "No content extracted"
-                    markdown = "# No Content\n\nNo content could be extracted from this page."
+                    # Fallback: if markdown extraction failed, try HTML
+                    if hasattr(result, 'html') and result.html:
+                        content = self._clean_html_content(result.html)
+                        markdown = self._html_to_markdown(result.html)
+                    else:
+                        content = "No content extracted"
+                        markdown = "# No Content\n\nNo content could be extracted from this page."
                 
                 # Extract title
                 title = getattr(result, 'title', result.url) or result.url
                 
-                # Build metadata
+                # Build metadata - OPTIMIZED (minimal metadata)
                 metadata = {
                     "url": result.url,
                     "title": title,
@@ -222,7 +239,7 @@ class Crawl4AIClient:
                     "cache_hit": False,
                     "cache_age_hours": None,
                     "source": "crawl4ai",
-                    "extractor": "local"
+                    "extractor": "local_optimized"
                 }
                 
                 # Add any additional metadata from the result
@@ -235,7 +252,7 @@ class Crawl4AIClient:
                     content=content,
                     markdown=markdown,
                     metadata=metadata,
-                    screenshot_url=getattr(result, 'screenshot', None)
+                    screenshot_url=None  # ❌ No screenshots
                 )
                 
                 documents.append(document)

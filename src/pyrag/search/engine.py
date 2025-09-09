@@ -2,6 +2,8 @@
 
 from typing import Any, Dict, List, Optional
 from ..logging import get_logger
+from .topic_coverage import TopicCoverageEngine
+from .multi_dimensional import MultiDimensionalSearchEngine
 
 logger = get_logger(__name__)
 
@@ -16,20 +18,31 @@ class SimpleSearchEngine:
         self.embedding_service = embedding_service
         self.llm_client = llm_client
         self.relationship_manager = relationship_manager
+        
+        # Initialize topic coverage engine for comprehensive queries
+        self.coverage_engine = TopicCoverageEngine(
+            llm_client=llm_client,
+            vector_store=vector_store
+        )
+        
+        # Initialize multi-dimensional search engine
+        self.multi_dimensional_engine = MultiDimensionalSearchEngine(
+            vector_store=vector_store,
+            embedding_service=embedding_service,
+            llm_client=llm_client
+        )
 
     async def search(
         self,
         query: str,
         library: Optional[str] = None,
-        version: Optional[str] = None,
-        content_type: Optional[str] = None,
         max_results: int = 10,
     ) -> List[Dict[str, Any]]:
         """Search with query expansion and reranking."""
         self.logger.info(f"Search for query: {query}")
         
         # Step 1: Query Analysis and Intent Classification
-        query_intent = await self._analyze_query_intent(query, library, content_type)
+        query_intent = await self._analyze_query_intent(query, library)
         self.logger.info(f"Query intent: {query_intent}")
         
         # Step 2: Query Expansion and Reformulation
@@ -38,7 +51,7 @@ class SimpleSearchEngine:
         
         # Step 3: Multi-Query Retrieval
         all_results = await self._multi_query_retrieval(
-            expanded_queries, library, version, content_type, max_results
+            expanded_queries, library, max_results
         )
         
         # Step 4: Intelligent Reranking with Context
@@ -46,41 +59,125 @@ class SimpleSearchEngine:
             all_results, query, query_intent, max_results
         )
         
-        # Step 5: Context Expansion (if relationship manager available)
-        if self.relationship_manager and len(reranked_results) > 0:
+        # Step 5: Topic Coverage Analysis (for comprehensive queries)
+        coverage_enhanced_results = reranked_results
+        if query_intent.get("response_depth") == "comprehensive" or query_intent.get("is_multi_faceted", False):
+            self.logger.info("Applying comprehensive topic coverage analysis")
+            coverage_enhanced_results = await self.coverage_engine.ensure_comprehensive_coverage(
+                reranked_results, query, query_intent, library
+            )
+        
+        # Step 6: Context Expansion (if relationship manager available)  
+        if self.relationship_manager and len(coverage_enhanced_results) > 0:
             expanded_results = await self.relationship_manager.expand_search_context(
-                reranked_results, max_expansion=3
+                coverage_enhanced_results, max_expansion=3
             )
             final_results = expanded_results.primary_results + expanded_results.expanded_results
             self.logger.info(f"Context expansion added {len(expanded_results.expanded_results)} results")
         else:
-            final_results = reranked_results
+            final_results = coverage_enhanced_results
         
         # Ensure we don't exceed max_results
         final_results = final_results[:max_results]
         
         # Add search metadata
         for result in final_results:
-            result["search_metadata"] = {
+            if "search_metadata" not in result:
+                result["search_metadata"] = {}
+            result["search_metadata"].update({
                 "query_intent": query_intent,
                 "query_variants_used": len(expanded_queries),
                 "reranking_applied": True,
-                "context_expanded": self.relationship_manager is not None
-            }
+                "context_expanded": self.relationship_manager is not None,
+                "coverage_analysis_applied": query_intent.get("response_depth") == "comprehensive"
+            })
         
         self.logger.info(f"Search returned {len(final_results)} results")
         return final_results
 
-    async def _analyze_query_intent(self, query: str, library: Optional[str], content_type: Optional[str]) -> Dict[str, Any]:
+    async def search_comprehensive(
+        self,
+        query: str,
+        library: Optional[str] = None,
+        max_results: int = 20,
+    ) -> Dict[str, Any]:
+        """Comprehensive search using multi-dimensional strategy for complex queries."""
+        self.logger.info(f"Comprehensive search for: {query}")
+        
+        # Step 1: Enhanced Query Analysis
+        query_intent = await self._analyze_query_intent(query, library)
+        self.logger.info(f"Query intent: {query_intent}")
+        
+        # Step 2: Determine search strategy based on intent
+        if query_intent.get("response_depth") == "comprehensive" or query_intent.get("is_multi_faceted", False):
+            # Use multi-dimensional search for complex queries
+            self.logger.info("Using multi-dimensional search strategy")
+            multi_dim_result = await self.multi_dimensional_engine.search_multi_dimensional(
+                query=query,
+                intent=query_intent,
+                library=library,
+                max_results_per_dimension=5
+            )
+            
+            # Extract results and add comprehensive metadata
+            results = multi_dim_result.synthesized_results
+            
+            # Add comprehensive search metadata
+            for result in results:
+                if "search_metadata" not in result:
+                    result["search_metadata"] = {}
+                result["search_metadata"].update({
+                    "search_strategy": "multi_dimensional",
+                    "dimensions_searched": [dim.name for dim in multi_dim_result.dimensions_searched],
+                    "dimension_coverage_score": multi_dim_result.coverage_score,
+                    "total_search_time": multi_dim_result.total_search_time,
+                    "result_distribution": multi_dim_result.result_distribution
+                })
+            
+            # Apply topic coverage analysis if still needed
+            if multi_dim_result.coverage_score < 0.8:
+                self.logger.info("Coverage score low, applying additional topic coverage analysis")
+                results = await self.coverage_engine.ensure_comprehensive_coverage(
+                    results, query, query_intent, library
+                )
+            
+            return {
+                "results": results[:max_results],
+                "search_strategy": "multi_dimensional", 
+                "query_intent": query_intent,
+                "multi_dimensional_metadata": {
+                    "dimensions_searched": len(multi_dim_result.dimensions_searched),
+                    "coverage_score": multi_dim_result.coverage_score,
+                    "total_search_time": multi_dim_result.total_search_time,
+                    "result_distribution": multi_dim_result.result_distribution
+                }
+            }
+        
+        else:
+            # Use standard search for simpler queries
+            self.logger.info("Using standard search strategy")
+            results = await self.search(query, library, max_results)
+            
+            return {
+                "results": results,
+                "search_strategy": "standard",
+                "query_intent": query_intent,
+                "multi_dimensional_metadata": None
+            }
+
+    async def _analyze_query_intent(self, query: str, library: Optional[str]) -> Dict[str, Any]:
         """Analyze query intent and classify the type of search needed."""
         intent = {
             "primary_type": "general",
-            "content_preference": content_type or "overview",
             "library_focus": library,
             "complexity_level": "intermediate",
             "requires_code_examples": False,
             "requires_api_reference": False,
-            "requires_tutorial": False
+            "requires_tutorial": False,
+            "response_depth": "standard",  # quick|standard|comprehensive
+            "is_multi_faceted": False,     # requires multiple knowledge areas
+            "workflow_query": False,       # end-to-end implementation query
+            "production_focused": False,   # deployment, scaling, monitoring concerns
         }
         
         query_lower = query.lower()
@@ -102,6 +199,55 @@ class SimpleSearchEngine:
         elif any(term in query_lower for term in ["advanced", "complex", "expert", "detailed"]):
             intent["complexity_level"] = "advanced"
         
+        # Detect comprehensive/multi-faceted queries
+        comprehensive_indicators = [
+            "production", "deployment", "scaling", "monitoring", "best practices",
+            "end to end", "complete", "comprehensive", "full", "entire process",
+            "from scratch", "step by step", "build", "implement", "create"
+        ]
+        
+        production_indicators = [
+            "production", "deploy", "scaling", "monitoring", "performance", 
+            "security", "authentication", "logging", "error handling", "reliability",
+            "optimization", "caching", "async", "testing", "ci/cd"
+        ]
+        
+        workflow_indicators = [
+            "how to build", "how to create", "how to implement", "step by step",
+            "end to end", "complete guide", "full implementation", "from start to finish"
+        ]
+        
+        multi_faceted_indicators = [
+            "and", "with", "including", "plus", "along with", "as well as",
+            "production ready", "enterprise", "scalable", "robust"
+        ]
+        
+        # Check for comprehensive query patterns
+        if any(term in query_lower for term in comprehensive_indicators):
+            intent["response_depth"] = "comprehensive"
+            
+        if any(term in query_lower for term in production_indicators):
+            intent["production_focused"] = True
+            intent["response_depth"] = "comprehensive"  # Production queries need depth
+            
+        if any(term in query_lower for term in workflow_indicators):
+            intent["workflow_query"] = True
+            intent["response_depth"] = "comprehensive"
+            
+        if any(term in query_lower for term in multi_faceted_indicators):
+            intent["is_multi_faceted"] = True
+            
+        # Multi-concept detection (simple heuristic)
+        concept_count = sum([
+            "agent" in query_lower, "api" in query_lower, "database" in query_lower,
+            "deploy" in query_lower, "monitor" in query_lower, "test" in query_lower,
+            "security" in query_lower, "performance" in query_lower, "scale" in query_lower
+        ])
+        
+        if concept_count >= 2:
+            intent["is_multi_faceted"] = True
+            intent["response_depth"] = "comprehensive"
+        
         # Use LLM for more sophisticated intent analysis if available
         if self.llm_client:
             try:
@@ -114,22 +260,32 @@ class SimpleSearchEngine:
 
     async def _llm_query_intent_analysis(self, query: str, library: Optional[str]) -> Dict[str, Any]:
         """Use LLM to analyze query intent more deeply."""
-        prompt = f"""Analyze this search query for a Python library documentation system and return JSON with intent classification.
+        prompt = f"""Analyze this search query for a Python library documentation system that serves AI coding agents. Return JSON with comprehensive intent classification.
 
 Query: {query}
 Library: {library or 'general'}
 
+This query will be answered by an AI coding agent, so analyze what type of comprehensive information would be most helpful.
+
 Return ONLY a JSON object with these fields:
 {{
-  "primary_type": "[tutorial|api_reference|examples|overview|troubleshooting]",
-  "content_preference": "[tutorial|api_reference|examples|overview|troubleshooting]",
-  "complexity_level": "[beginner|intermediate|advanced]",
+  "primary_type": "[tutorial|api_reference|examples|overview|troubleshooting|workflow|architecture]",
+  "response_depth": "[quick|standard|comprehensive]",
+  "is_multi_faceted": true/false,
+  "workflow_query": true/false,
+  "production_focused": true/false,
   "requires_code_examples": true/false,
   "requires_api_reference": true/false,
   "requires_tutorial": true/false,
-  "key_concepts": ["list", "of", "key", "concepts"],
-  "search_strategy": "[comprehensive|focused|quick]"
-}}"""
+  "key_concepts": ["list", "of", "main", "concepts"],
+  "required_topics": ["list", "of", "topic", "areas", "needed"],
+  "complexity_level": "[beginner|intermediate|advanced]",
+  "expected_response_sections": ["section1", "section2", "section3"]
+}}
+
+Examples:
+- "How to authenticate users in FastAPI" → quick, single-topic
+- "Build a production-ready FastAPI app with authentication and monitoring" → comprehensive, multi-faceted, production-focused"""
 
         try:
             response = await self.llm_client.generate(prompt)
@@ -215,8 +371,6 @@ Return ONLY a JSON array of strings: ["query1", "query2", "query3"]"""
         self, 
         queries: List[str], 
         library: Optional[str], 
-        version: Optional[str], 
-        content_type: Optional[str], 
         max_results: int
     ) -> List[Dict[str, Any]]:
         """Retrieve results using multiple query variants."""
@@ -225,9 +379,9 @@ Return ONLY a JSON array of strings: ["query1", "query2", "query3"]"""
         
         for i, query in enumerate(queries):
             try:
-                # Determine collection and build where clause
-                collection_name = self._get_collection_name(content_type)
-                where_clause = self._build_where_clause(library, version)
+                # Use the single documents collection and build where clause
+                collection_name = "documents"
+                where_clause = self._build_where_clause(library)
                 
                 # Search with this query variant
                 results = await self.vector_store.search(
@@ -439,32 +593,19 @@ Return ONLY a JSON array of strings: ["query1", "query2", "query3"]"""
         results.sort(key=lambda x: x["final_score"], reverse=True)
         return results
     
-    def _get_collection_name(self, content_type: Optional[str] = None) -> str:
-        """Get the appropriate collection name based on content type."""
-        if content_type == "api_reference":
-            return "api_reference"
-        elif content_type == "examples":
-            return "examples"
-        elif content_type == "overview":
-            return "overview"
-        elif content_type == "tutorials":
-            return "tutorials"
-        else:
-            # Default to overview collection which has most content
-            return "overview"
+    def _get_collection_name(self) -> str:
+        """Get the documents collection name (simplified - we only use one collection)."""
+        return "documents"
     
-    def _build_where_clause(self, library: Optional[str], version: Optional[str]) -> Optional[Dict[str, Any]]:
+    def _build_where_clause(self, library: Optional[str]) -> Optional[Dict[str, Any]]:
         """Build a where clause for ChromaDB filtering."""
-        if not library and not version:
+        if not library:
             return None
         
         where_clause = {}
         
         if library:
             where_clause["library_name"] = str(library)
-        
-            if version:
-                where_clause["version"] = str(version)
 
         # If we have multiple conditions, use $and
         if len(where_clause) > 1:

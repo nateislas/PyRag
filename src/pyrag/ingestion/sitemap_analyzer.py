@@ -389,6 +389,8 @@ class SitemapAnalyzer:
         """Filter URLs to only include documentation-related content."""
         base_domain = urlparse(base_url).netloc
         filtered_entries = []
+        total_entries = len(entries)
+        non_english_count = 0
 
         for entry in entries:
             entry_domain = urlparse(entry.url).netloc
@@ -397,8 +399,14 @@ class SitemapAnalyzer:
             if entry_domain == base_domain or entry_domain.endswith(f".{base_domain}"):
                 # Check if it looks like documentation
                 if self._is_documentation_url(entry.url):
-                    filtered_entries.append(entry)
+                    # Filter for English-only content
+                    if self._is_english_url(entry.url):
+                        filtered_entries.append(entry)
+                    else:
+                        non_english_count += 1
+                        self.logger.debug(f"Filtered out non-English URL: {entry.url}")
 
+        self.logger.info(f"URL filtering: {total_entries} total, {len(filtered_entries)} English docs, {non_english_count} non-English filtered out")
         return filtered_entries
 
     def _is_documentation_url(self, url: str) -> bool:
@@ -442,6 +450,69 @@ class SitemapAnalyzer:
             return True
 
         return False
+
+    def _is_english_url(self, url: str) -> bool:
+        """Check if a URL is for English content (exclude non-English language paths)."""
+        url_lower = url.lower()
+        
+        # Common non-English language codes in URLs
+        non_english_patterns = [
+            "/ko/",      # Korean
+            "/ja/",      # Japanese  
+            "/zh/",      # Chinese
+            "/zh-cn/",   # Chinese (Simplified)
+            "/zh-tw/",   # Chinese (Traditional)
+            "/zh-hans/", # Chinese (Simplified)
+            "/zh-hant/", # Chinese (Traditional)
+            "/fr/",      # French
+            "/de/",      # German
+            "/es/",      # Spanish
+            "/es-es/",   # Spanish (Spain)
+            "/es-mx/",   # Spanish (Mexico)
+            "/it/",      # Italian
+            "/pt/",      # Portuguese
+            "/pt-br/",   # Portuguese (Brazil)
+            "/ru/",      # Russian
+            "/ar/",      # Arabic
+            "/hi/",      # Hindi
+            "/th/",      # Thai
+            "/vi/",      # Vietnamese
+            "/nl/",      # Dutch
+            "/sv/",      # Swedish
+            "/no/",      # Norwegian
+            "/da/",      # Danish
+            "/fi/",      # Finnish
+            "/pl/",      # Polish
+            "/tr/",      # Turkish
+            "/he/",      # Hebrew
+            "/uk/",      # Ukrainian
+            "/cs/",      # Czech
+            "/hu/",      # Hungarian
+            "/ro/",      # Romanian
+            "/bg/",      # Bulgarian
+            "/hr/",      # Croatian
+            "/sk/",      # Slovak
+            "/sl/",      # Slovenian
+            "/et/",      # Estonian
+            "/lv/",      # Latvian
+            "/lt/",      # Lithuanian
+            "/el/",      # Greek
+            "/is/",      # Icelandic
+            "/mt/",      # Maltese
+            "/cy/",      # Welsh
+            "/ga/",      # Irish
+            "/eu/",      # Basque
+            "/ca/",      # Catalan
+            "/gl/",      # Galician
+        ]
+        
+        # Check if URL contains any non-English language patterns
+        for pattern in non_english_patterns:
+            if pattern in url_lower:
+                return False
+        
+        # If no non-English patterns found, assume it's English
+        return True
 
     def _classify_urls(
         self, entries: List[SitemapEntry]

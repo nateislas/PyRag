@@ -41,7 +41,7 @@ class DocumentProcessor:
 
     async def process_scraped_document(
         self, scraped_doc: "ScrapedDocument", library_name: str, version: str = "latest"
-    ) -> EnhancedProcessingResult:
+    ) -> ProcessingResult:
         """Process a scraped document using optimized single LLM call analysis."""
         try:
             self.logger.info(
@@ -100,7 +100,7 @@ class DocumentProcessor:
                 "optimization_level": "high"
             }
 
-            return EnhancedProcessingResult(
+            return ProcessingResult(
                 chunks=document_chunks,
                 metadata={
                     "source_url": scraped_doc.url,
@@ -122,7 +122,7 @@ class DocumentProcessor:
                 f"Error in optimized processing of document {scraped_doc.url}: {e}"
             )
             # Processing failed - return empty result
-            return EnhancedProcessingResult(
+            return ProcessingResult(
                 chunks=[],
                 metadata={},
                 processing_stats={
@@ -209,7 +209,7 @@ class DocumentProcessor:
         scraped_docs: List["ScrapedDocument"],
         library_name: str,
         version: str = "latest",
-    ) -> List[EnhancedProcessingResult]:
+    ) -> List[ProcessingResult]:
         """Process multiple scraped documents with enhanced processing."""
         results = []
 
@@ -220,7 +220,7 @@ class DocumentProcessor:
         return results
 
     def get_processing_stats(
-        self, results: List[EnhancedProcessingResult]
+        self, results: List[ProcessingResult]
     ) -> Dict[str, Any]:
         """Get aggregate statistics from optimized processing results."""
         total_chunks = sum(len(r.chunks) for r in results)

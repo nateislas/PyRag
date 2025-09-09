@@ -16,7 +16,7 @@ logger = get_logger(__name__)
 class VectorStore:
     """ChromaDB-based vector store for document storage and retrieval."""
 
-    def __init__(self):
+    def __init__(self, embedding_service: Optional["EmbeddingService"] = None):
         """Initialize vector store."""
         self.logger = get_logger(__name__)
         self.logger.info("Initializing ChromaDB vector store")
@@ -46,14 +46,18 @@ class VectorStore:
                 ),
             )
 
-        # Initialize embedding service once (shared instance)
-        try:
-            from .embeddings import EmbeddingService
-            self.embedding_service = EmbeddingService()
-            self.logger.info("Embedding service initialized successfully")
-        except Exception as e:
-            self.logger.warning(f"Failed to initialize embedding service: {e}")
-            self.embedding_service = None
+        # Initialize embedding service (use provided or create new)
+        if embedding_service is not None:
+            self.embedding_service = embedding_service
+            self.logger.info("Using provided embedding service")
+        else:
+            try:
+                from .embeddings import EmbeddingService
+                self.embedding_service = EmbeddingService()
+                self.logger.info("Embedding service initialized successfully")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize embedding service: {e}")
+                self.embedding_service = None
 
         # Get or create main collection only
         self._setup_collections()
@@ -68,25 +72,9 @@ class VectorStore:
         )
 
     def _get_collection_by_content_type(self, content_type: str):
-        """Get the appropriate collection based on content type for enhanced RAG."""
-        content_type_mapping = {
-            "api_reference": self.api_reference_collection,
-            "tutorial": self.tutorials_collection,
-            "tutorials": self.tutorials_collection,
-            "examples": self.examples_collection,
-            "concepts": self.concepts_collection,
-            "configuration": self.configuration_collection,
-            "troubleshooting": self.troubleshooting_collection,
-            "changelog": self.changelog_collection,
-            "overview": self.overview_collection,
-            "installation": self.overview_collection,  # Map to overview
-            "home": self.overview_collection,  # Map to overview
-            "section": self.overview_collection,  # Map to overview
-            "subsection": self.overview_collection,  # Map to overview
-            "detail": self.documents_collection,  # Map to main documents
-        }
-
-        return content_type_mapping.get(content_type, self.documents_collection)
+        """Get the documents collection (simplified - we only use one collection)."""
+        # All content types map to the single documents collection
+        return self.documents_collection
 
     def _generate_id(self, content: str, metadata: Dict[str, Any]) -> str:
         """Generate a unique ID for a document chunk."""

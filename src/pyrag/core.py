@@ -39,21 +39,28 @@ class PyRAG:
         self.search_engine.llm_client = llm_client
         self.logger.info("LLM client set for enhanced search")
 
-    async def search(
+    async def search_documentation(
         self,
         query: str,
         library: Optional[str] = None,
-        version: Optional[str] = None,
-        content_type: Optional[str] = None,
         max_results: int = 10,
     ) -> List[Dict[str, Any]]:
         """Search for relevant documentation using the enhanced search engine."""
         return await self.search_engine.search(
             query=query,
             library=library,
-            version=version,
-            content_type=content_type,
             max_results=max_results,
+        )
+
+    async def search_comprehensive(
+        self,
+        query: str,
+        library: Optional[str] = None,
+        max_results: int = 20,
+    ) -> Dict[str, Any]:
+        """Comprehensive multi-dimensional search for complex queries."""
+        return await self.search_engine.search_comprehensive(
+            query=query, library=library, max_results=max_results
         )
 
     async def add_documents(self, documents: List[Dict[str, Any]]) -> List[str]:
