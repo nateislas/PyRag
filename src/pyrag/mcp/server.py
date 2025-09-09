@@ -25,6 +25,11 @@ logging.basicConfig(
     force=True,
 )
 
+# Set Hugging Face cache directory to /tmp for cloud deployment
+os.environ.setdefault("HF_HOME", "/tmp/hf_cache")
+os.environ.setdefault("TRANSFORMERS_CACHE", "/tmp/transformers_cache")
+os.environ.setdefault("HF_DATASETS_CACHE", "/tmp/hf_datasets_cache")
+
 logger = logging.getLogger(__name__)
 logger.info("PyRAG MCP Server (Consolidated) starting...")
 
