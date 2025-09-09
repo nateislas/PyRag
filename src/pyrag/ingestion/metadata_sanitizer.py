@@ -3,7 +3,7 @@ Metadata sanitizer for ChromaDB compatibility.
 
 This module provides utilities to sanitize metadata before storing in ChromaDB,
 ensuring all metadata values are serializable and compatible with ChromaDB's
-requirements.
+requirements. Now optimized for Chroma Cloud's 16-field limit.
 """
 
 import json
@@ -11,6 +11,8 @@ from typing import Any, Dict, List, Union, Optional
 from datetime import datetime
 from pathlib import Path
 import logging
+
+from .metadata_schema import validate_metadata_schema, get_schema_info
 
 logger = logging.getLogger(__name__)
 
@@ -41,13 +43,13 @@ class MetadataSanitizer:
     
     def sanitize_metadata(self, metadata: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Sanitize metadata dictionary for ChromaDB storage.
+        Sanitize metadata dictionary for ChromaDB storage with Chroma Cloud optimization.
         
         Args:
             metadata: Raw metadata dictionary
             
         Returns:
-            Sanitized metadata dictionary safe for ChromaDB
+            Sanitized metadata dictionary optimized for Chroma Cloud (16 fields max)
         """
         if not metadata:
             return {}
@@ -55,9 +57,13 @@ class MetadataSanitizer:
         self.logger.debug(f"Sanitizing metadata with {len(metadata)} fields")
         self._reset_stats()
         
+        # First, validate and optimize using the new schema
+        optimized_metadata = validate_metadata_schema(metadata)
+        
+        # Then apply traditional sanitization
         sanitized = {}
         
-        for key, value in metadata.items():
+        for key, value in optimized_metadata.items():
             try:
                 sanitized_value = self._sanitize_value(value)
                 if sanitized_value is not None:
@@ -72,7 +78,11 @@ class MetadataSanitizer:
         
         self.sanitization_stats["total_metadata_fields"] = len(metadata)
         
+        # Log schema optimization info
+        schema_info = get_schema_info()
         self.logger.info(f"Metadata sanitization complete: {self.sanitization_stats}")
+        self.logger.debug(f"Chroma Cloud schema: {len(sanitized)}/{schema_info['max_fields']} fields used")
+        
         return sanitized
     
     def _sanitize_value(self, value: Any) -> Optional[Any]:

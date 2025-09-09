@@ -5,8 +5,8 @@ from .crawl4ai_client import Crawl4AIClient
 import asyncio
 import json
 import time
-# Use parallel processing for content extraction
-import multiprocessing as mp
+# Use threading for content extraction (better for I/O-bound web scraping)
+import concurrent.futures
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,46 +18,66 @@ from ..storage import EmbeddingService
 from ..llm.client import LLMClient
 from ..logging import get_logger
 
-# Standalone function for multiprocessing (avoids pickling issues)
-def process_url_batch_standalone(url_batch: List[str]) -> List[Dict[str, Any]]:
-    """Standalone function to process a batch of URLs - avoids pickling issues."""
-    import asyncio
+# Function for threading-based parallel processing
+async def process_url_batch_async(url_batch: List[str]) -> List[Dict[str, Any]]:
+    """Process a batch of URLs asynchronously - works with threading."""
     from .crawl4ai_client import Crawl4AIClient
     
-    async def process_batch():
-        """Process a batch of URLs with a new client instance."""
-        client = Crawl4AIClient()
-        results = []
-        
-        async with client:
-            for url in url_batch:
-                try:
-                    doc = await client.scrape_url(url)
-                    results.append({
-                        "success": True,
-                        "url": url,
-                        "content": doc.content,
-                        "markdown": doc.markdown,
-                        "title": doc.title,
-                        "metadata": doc.metadata,
-                        "content_length": len(doc.content)
-                    })
-                except Exception as e:
-                    results.append({
-                        "success": False,
-                        "url": url,
-                        "error": str(e)
-                    })
-        
-        return results
+    client = Crawl4AIClient()
+    results = []
     
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    async with client:
+        for url in url_batch:
+            try:
+                doc = await client.scrape_url(url)
+                results.append({
+                    "success": True,
+                    "url": url,
+                    "content": doc.content,
+                    "markdown": doc.markdown,
+                    "title": doc.title,
+                    "metadata": doc.metadata,
+                    "content_length": len(doc.content)
+                })
+            except Exception as e:
+                results.append({
+                    "success": False,
+                    "url": url,
+                    "error": str(e)
+                })
     
+    return results
+
+# Function for threading-based document processing
+async def process_document_async(
+    doc: "ScrapedDocument", 
+    processor: "DocumentProcessor", 
+    library_name: str, 
+    version: str,
+    doc_index: int,
+    total_docs: int
+) -> tuple[bool, "ProcessingResult", str]:
+    """Process a single document asynchronously - works with threading."""
     try:
-        return loop.run_until_complete(process_batch())
-    finally:
-        loop.close()
+        # Check if processor is async (enhanced) or sync (basic)
+        if hasattr(processor, "process_scraped_document") and asyncio.iscoroutinefunction(
+            processor.process_scraped_document
+        ):
+            result = await processor.process_scraped_document(
+                scraped_doc=doc,
+                library_name=library_name,
+                version=version,
+            )
+        else:
+            result = processor.process_scraped_document(
+                scraped_doc=doc,
+                library_name=library_name,
+                version=version,
+            )
+        
+        return True, result, f"✅ Processed {doc.url} into {len(result.chunks)} chunks"
+    except Exception as e:
+        return False, None, f"Error processing document {doc.url}: {e}"
 from ..storage import VectorStore
 from .document_processor import (
     DocumentProcessor,
@@ -130,6 +150,7 @@ class DocumentationManager:
         # Optimized settings are now the default configuration
         self.llm_filtering_batch_size = 20  # URLs per batch for LLM classification
         self.parallel_processes = 3  # Optimal for MacBook Air
+        self.document_processing_threads = 5  # Threads for document processing (LLM calls)
 
         # Always use enhanced processor for semantic chunking and rich metadata
         if not llm_client:
@@ -472,10 +493,6 @@ Respond with only "YES" or "NO" for each URL, one per line. YES = documentation,
         
         return chunks
 
-    def _process_url_batch_sync(self, url_batch: List[str]) -> List[Dict[str, Any]]:
-        """Synchronous wrapper for async batch processing in parallel."""
-        # Use the standalone function to avoid pickling issues
-        return process_url_batch_standalone(url_batch)
 
 
     def _log_crawl_progress(self, progress_data):
@@ -598,21 +615,30 @@ Respond with only "YES" or "NO" for each URL, one per line. YES = documentation,
         
         start_time = time.time()
         
-        # Parallel processing configuration
-        NUM_PROCESSES = self.parallel_processes
-        self.logger.info(f"🚀 Using {NUM_PROCESSES} parallel processes")
+        # Threading configuration (better for I/O-bound web scraping)
+        NUM_THREADS = self.parallel_processes
+        self.logger.info(f"🚀 Using {NUM_THREADS} threads for parallel processing")
         
         # Split URLs into chunks
-        url_chunks = self._chunk_urls(urls_to_extract, NUM_PROCESSES)
+        url_chunks = self._chunk_urls(urls_to_extract, NUM_THREADS)
         
-        self.logger.info(f"📦 Split into {NUM_PROCESSES} chunks:")
+        self.logger.info(f"📦 Split into {NUM_THREADS} chunks:")
         for i, chunk in enumerate(url_chunks):
-            self.logger.info(f"   Process {i}: {len(chunk)} URLs")
+            self.logger.info(f"   Thread {i}: {len(chunk)} URLs")
         
-        # Process in parallel
-        self.logger.info(f"🔄 Starting parallel processing...")
-        with mp.Pool(NUM_PROCESSES) as pool:
-            chunk_results = pool.map(process_url_batch_standalone, url_chunks)
+        # Process in parallel using threading
+        self.logger.info(f"🔄 Starting threaded parallel processing...")
+        chunk_results = []
+        
+        # Use asyncio.gather to run all chunks concurrently
+        tasks = [process_url_batch_async(chunk) for chunk in url_chunks]
+        chunk_results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Handle any exceptions that occurred
+        for i, result in enumerate(chunk_results):
+            if isinstance(result, Exception):
+                self.logger.error(f"Thread {i} failed: {result}")
+                chunk_results[i] = []  # Replace exception with empty list
         
         # Flatten results
         all_results = []
@@ -653,7 +679,7 @@ Respond with only "YES" or "NO" for each URL, one per line. YES = documentation,
             self.logger.info(f"   • Average per page: {avg_content:,} chars")
         self.logger.info(f"   • Total time: {total_time/60:.1f} minutes")
         self.logger.info(f"   • Throughput: {len(urls_to_extract)/total_time*60:.1f} URLs/minute")
-        self.logger.info(f"   • Speed improvement: ~{NUM_PROCESSES}x faster than sequential")
+        self.logger.info(f"   • Speed improvement: ~{NUM_THREADS}x faster than sequential (threading)")
 
         return {
             "total_urls": len(urls),
@@ -662,7 +688,7 @@ Respond with only "YES" or "NO" for each URL, one per line. YES = documentation,
             "failed_url_list": failed_urls,
             "total_content_length": total_content_length,
             "total_time_seconds": total_time,
-            "parallel_processes": NUM_PROCESSES,
+            "parallel_threads": NUM_THREADS,
             "throughput_urls_per_minute": len(urls_to_extract)/total_time*60,
             "document_urls": [doc.url for doc in documents],
         }, documents
@@ -682,48 +708,55 @@ Respond with only "YES" or "NO" for each URL, one per line. YES = documentation,
         token_over_limit_chunks = 0
         token_split_segments = 0
 
-        # Process each document
+        # Process documents in parallel using threading (better for I/O-bound LLM calls)
+        self.logger.info(f"🚀 Processing {len(documents)} documents with {self.document_processing_threads} threads...")
+        
+        # Create semaphore to limit concurrent LLM calls
+        semaphore = asyncio.Semaphore(self.document_processing_threads)
+        
+        async def process_document_with_semaphore(doc, i):
+            async with semaphore:
+                return await process_document_async(
+                    doc=doc,
+                    processor=self.processor,
+                    library_name=job.library_name,
+                    version=job.version,
+                    doc_index=i,
+                    total_docs=len(documents)
+                )
+        
+        # Create tasks for parallel processing
+        tasks = []
         for i, doc in enumerate(documents, 1):
-            try:
-                self.logger.info(
-                    f"📄 Processing document ({i}/{len(documents)}): {doc.url}"
-                )
-
-                # Check if processor is async (enhanced) or sync (basic)
-                if hasattr(
-                    self.processor, "process_scraped_document"
-                ) and asyncio.iscoroutinefunction(
-                    self.processor.process_scraped_document
-                ):
-                    result = await self.processor.process_scraped_document(
-                        scraped_doc=doc,
-                        library_name=job.library_name,
-                        version=job.version,
-                    )
-                else:
-                    result = self.processor.process_scraped_document(
-                        scraped_doc=doc,
-                        library_name=job.library_name,
-                        version=job.version,
-                    )
-                processing_results.append(result)
-
-                total_chunks += len(result.chunks)
-                total_content_length += len(doc.content)
-
-                self.logger.info(
-                    f"✅ Processed {doc.url} into {len(result.chunks)} chunks"
-                )
-
+            task = process_document_with_semaphore(doc, i)
+            tasks.append(task)
+        
+        # Process all documents concurrently
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        # Process results
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                self.logger.error(f"Document {i+1} processing failed: {result}")
+                continue
+                
+            success, processing_result, message = result
+            
+            if success and processing_result:
+                processing_results.append(processing_result)
+                total_chunks += len(processing_result.chunks)
+                total_content_length += len(documents[i].content)
+                
+                self.logger.info(message)
+                
                 # Track content type distribution
-                for chunk in result.chunks:
+                for chunk in processing_result.chunks:
                     content_type = chunk.metadata.get("content_type", "unknown")
                     content_type_distribution[content_type] = (
                         content_type_distribution.get(content_type, 0) + 1
                     )
-
-            except Exception as e:
-                self.logger.error(f"Error processing document {doc.url}: {e}")
+            else:
+                self.logger.error(message)
 
         # Store in vector database
         self.logger.info(f"💾 Storing {total_chunks} chunks in vector database...")

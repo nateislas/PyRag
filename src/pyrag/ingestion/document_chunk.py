@@ -3,6 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
+from .metadata_schema import validate_metadata_schema, get_chroma_cloud_field_names
+
 
 @dataclass
 class DocumentChunk:
@@ -51,8 +53,9 @@ class DocumentChunk:
 
     @property
     def metadata(self) -> Dict[str, Any]:
-        """Get metadata as dictionary for compatibility with existing code."""
-        metadata = {
+        """Get metadata as dictionary optimized for Chroma Cloud (16 fields max)."""
+        # Build raw metadata from all available fields
+        raw_metadata = {
             "content_type": self.content_type,
             "hierarchy_path": self.hierarchy_path,
             "hierarchy_level": self.hierarchy_level,
@@ -78,9 +81,10 @@ class DocumentChunk:
         
         # Add additional metadata if present
         if self.additional_metadata:
-            metadata.update(self.additional_metadata)
-            
-        return metadata
+            raw_metadata.update(self.additional_metadata)
+        
+        # Validate and optimize for Chroma Cloud schema (16 fields max)
+        return validate_metadata_schema(raw_metadata)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for storage."""

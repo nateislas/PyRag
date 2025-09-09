@@ -3,9 +3,19 @@
 import logging
 import os
 import sys
+import uuid
 from typing import Any, Dict, List, Optional
 
 from fastmcp import Context, FastMCP
+
+# Import streaming capabilities
+from .streaming import create_streaming_response
+from ..logging import (
+    log_mcp_request, 
+    log_mcp_response, 
+    CorrelationContext,
+    MultiDimensionalSearchLogger
+)
 
 # Configure lightweight logging for FastMCP Cloud
 logging.basicConfig(
@@ -119,15 +129,28 @@ async def search_python_docs_comprehensive(
     Returns:
         Dict with structured comprehensive response including sections, metadata, and coverage info
     """
+    # Generate correlation ID for this request
+    correlation_id = str(uuid.uuid4())
+    
+    # Log the MCP request
+    log_mcp_request("search_python_docs_comprehensive", {
+        "query": query,
+        "library": library,
+        "response_format": response_format,
+        "max_results": max_results
+    }, correlation_id)
+
     if ctx:
-        await ctx.info(f"Comprehensive search for: {query}")
+        await ctx.info(f"🔍 Comprehensive search started (ID: {correlation_id})")
+        await ctx.info(f"Query: {query}")
         if library:
             await ctx.info(f"Library focus: {library}")
         await ctx.info(f"Response format: {response_format}")
 
     try:
-        # Get PyRAG instance
-        pyrag = get_pyrag()
+        with CorrelationContext(correlation_id):
+            # Get PyRAG instance
+            pyrag = get_pyrag()
 
         # Use comprehensive search for better results
         if response_format == "comprehensive":
@@ -169,11 +192,32 @@ async def search_python_docs_comprehensive(
             # Add multi-dimensional metadata if available
             if search_metadata:
                 response["metadata"]["multi_dimensional_search"] = search_metadata
+                
+            # Log successful response
+            log_mcp_response("search_python_docs_comprehensive", "comprehensive", {
+                "total_sections": response.get("metadata", {}).get("total_sections", 0),
+                "total_content_length": response.get("metadata", {}).get("total_content_length", 0),
+                "result_count": response.get("metadata", {}).get("total_results", 0),
+                "multi_dimensional": search_metadata is not None
+            }, correlation_id)
+            
+            if ctx:
+                await ctx.info(f"✅ Comprehensive search completed")
+                await ctx.info(f"Results: {response.get('metadata', {}).get('total_results', 0)} items")
+                
             return response
         elif response_format == "standard":
-            return await _build_standard_response(results, query, library)
+            response = await _build_standard_response(results, query, library)
+            log_mcp_response("search_python_docs_comprehensive", "standard", {
+                "result_count": response.get("metadata", {}).get("total_results", 0)
+            }, correlation_id)
+            return response
         else:  # quick
-            return await _build_quick_response(results, query, library)
+            response = await _build_quick_response(results, query, library)
+            log_mcp_response("search_python_docs_comprehensive", "quick", {
+                "result_count": len(response.get("sections", {}).get("quick_results", {}).get("items", []))
+            }, correlation_id)
+            return response
 
     except Exception as e:
         logger.error(f"Error in comprehensive search: {e}")
@@ -357,4 +401,336 @@ def _generate_response_title(query: str) -> str:
         return " ".join(query_words[:8]).title() + "..."
     return query.title()
 
-logger.info("PyRAG MCP Server ready with 2 tools: search_python_docs, search_python_docs_comprehensive")
+@mcp.tool
+async def search_python_docs_streaming(
+    query: str,
+    library: Optional[str] = None,
+    max_results: int = 20,
+    ctx: Context = None,
+) -> Dict[str, Any]:
+    """Streaming Python documentation search with real-time progress updates.
+    
+    This tool provides streaming comprehensive responses with progress notifications,
+    perfect for complex queries that benefit from real-time feedback.
+    
+    Args:
+        query: Natural language query about Python functionality
+        library: Specific library to search within (optional)
+        max_results: Maximum number of results to consider (default: 20)
+        ctx: MCP context for progress reporting and logging
+        
+    Returns:
+        Dict with comprehensive streaming response including progress metadata
+    """
+    # Generate correlation ID for this request
+    correlation_id = str(uuid.uuid4())
+    
+    # Log the MCP request
+    log_mcp_request("search_python_docs_streaming", {
+        "query": query,
+        "library": library,
+        "max_results": max_results
+    }, correlation_id)
+    
+    if ctx:
+        await ctx.info(f"🔍 Starting streaming search with correlation ID: {correlation_id}")
+        await ctx.info(f"Query: {query}")
+        if library:
+            await ctx.info(f"Library filter: {library}")
+
+    try:
+        with CorrelationContext(correlation_id):
+            # Get PyRAG instance
+            pyrag = get_pyrag()
+            
+            # Create streaming response
+            response = await create_streaming_response(
+                pyrag=pyrag,
+                query=query,
+                library=library, 
+                max_results=max_results,
+                ctx=ctx,
+                correlation_id=correlation_id
+            )
+            
+            # Log the response
+            log_mcp_response("search_python_docs_streaming", "streaming_comprehensive", {
+                "total_sections": response.get("metadata", {}).get("total_sections", 0),
+                "total_content_length": response.get("metadata", {}).get("total_content_length", 0),
+                "result_count": response.get("metadata", {}).get("total_results", 0),
+                "streaming_steps": response.get("streaming_metadata", {}).get("total_steps", 0)
+            }, correlation_id)
+            
+            if ctx:
+                await ctx.info(f"✅ Streaming search completed")
+                await ctx.info(f"Results: {response.get('metadata', {}).get('total_results', 0)} items")
+                await ctx.info(f"Sections: {response.get('metadata', {}).get('total_sections', 0)}")
+            
+            return response
+
+    except Exception as e:
+        logger.error(f"Error in streaming search: {e}")
+        if ctx:
+            await ctx.error(f"Streaming search failed: {e}")
+        return {
+            "query": query,
+            "library": library,
+            "error": str(e),
+            "comprehensive_answer": f"Error in streaming search: {e}",
+            "sections": {},
+            "metadata": {"total_results": 0, "completeness_score": 0.0},
+            "streaming_metadata": {"error": True, "correlation_id": correlation_id}
+        }
+
+@mcp.tool
+async def get_search_status(
+    correlation_id: str,
+    ctx: Context = None,
+) -> Dict[str, Any]:
+    """Get status of a search operation by correlation ID.
+    
+    This tool allows checking the status of long-running search operations.
+    
+    Args:
+        correlation_id: Correlation ID from a previous search request
+        ctx: MCP context for logging
+        
+    Returns:
+        Dict with search status information
+    """
+    if ctx:
+        await ctx.info(f"Checking status for correlation ID: {correlation_id}")
+    
+    # This is a placeholder - in a real implementation, you'd track operation status
+    return {
+        "correlation_id": correlation_id,
+        "status": "completed",  # completed | running | failed
+        "message": "Status tracking not yet implemented",
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
+
+@mcp.tool
+async def health_check(ctx: Context = None) -> Dict[str, Any]:
+    """Health check endpoint to verify server connectivity and basic functionality.
+    
+    This tool helps diagnose server issues by checking:
+    - Server responsiveness
+    - Basic imports
+    - Configuration status
+    
+    Returns:
+        Dict with health status information
+    """
+    if ctx:
+        await ctx.info("Running health check...")
+    
+    try:
+        import datetime
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "server": "PyRAG MCP Server",
+            "checks": {}
+        }
+        
+        # Check basic imports
+        try:
+            import sys
+            import os
+            health_status["checks"]["imports"] = "ok"
+            health_status["checks"]["python_version"] = sys.version
+        except Exception as e:
+            health_status["checks"]["imports"] = f"error: {e}"
+            health_status["status"] = "unhealthy"
+        
+        # Check if we can access the PyRAG module
+        try:
+            from pyrag.core import PyRAG
+            health_status["checks"]["pyrag_import"] = "ok"
+        except Exception as e:
+            health_status["checks"]["pyrag_import"] = f"error: {e}"
+            health_status["status"] = "unhealthy"
+        
+        # Check environment variables
+        try:
+            import os
+            env_vars = {}
+            for key in ["CHROMA_DB_PATH", "OPENAI_API_KEY", "CRAWL4AI_API_KEY"]:
+                env_vars[key] = "set" if os.getenv(key) else "not_set"
+            health_status["checks"]["environment"] = env_vars
+        except Exception as e:
+            health_status["checks"]["environment"] = f"error: {e}"
+        
+        if ctx:
+            await ctx.info(f"Health check completed: {health_status['status']}")
+        
+        return health_status
+        
+    except Exception as e:
+        logger.error(f"Health check failed: {e}")
+        if ctx:
+            await ctx.error(f"Health check failed: {e}")
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+
+@mcp.tool
+async def test_chromadb_connection(ctx: Context = None) -> Dict[str, Any]:
+    """Test ChromaDB connectivity and basic operations.
+    
+    This tool helps diagnose database connectivity issues by:
+    - Testing ChromaDB connection
+    - Checking collection status
+    - Verifying data availability
+    
+    Returns:
+        Dict with ChromaDB connection status and metadata
+    """
+    if ctx:
+        await ctx.info("Testing ChromaDB connection...")
+    
+    try:
+        import datetime
+        # Get PyRAG instance
+        pyrag = get_pyrag()
+        
+        # Test ChromaDB connection through PyRAG
+        db_status = {
+            "status": "connected",
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "checks": {}
+        }
+        
+        # Check if we can access the storage engine
+        try:
+            if hasattr(pyrag, 'storage_engine'):
+                storage = pyrag.storage_engine
+                db_status["checks"]["storage_engine"] = "available"
+                
+                # Try to get collection info
+                if hasattr(storage, 'get_collection_info'):
+                    collection_info = storage.get_collection_info()
+                    db_status["checks"]["collection_info"] = collection_info
+                else:
+                    db_status["checks"]["collection_info"] = "method_not_available"
+            else:
+                db_status["checks"]["storage_engine"] = "not_available"
+                db_status["status"] = "error"
+        except Exception as e:
+            db_status["checks"]["storage_engine"] = f"error: {e}"
+            db_status["status"] = "error"
+        
+        # Check if we can perform a simple search
+        try:
+            if ctx:
+                await ctx.info("Testing basic search functionality...")
+            
+            # Try a very simple search
+            test_results = await pyrag.search_documentation(
+                query="test",
+                max_results=1
+            )
+            
+            db_status["checks"]["basic_search"] = "ok"
+            db_status["checks"]["search_results_count"] = len(test_results) if test_results else 0
+            
+        except Exception as e:
+            db_status["checks"]["basic_search"] = f"error: {e}"
+            db_status["status"] = "error"
+        
+        if ctx:
+            await ctx.info(f"ChromaDB test completed: {db_status['status']}")
+        
+        return db_status
+        
+    except Exception as e:
+        logger.error(f"ChromaDB connection test failed: {e}")
+        if ctx:
+            await ctx.error(f"ChromaDB connection test failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+
+@mcp.tool
+async def get_server_status(ctx: Context = None) -> Dict[str, Any]:
+    """Get comprehensive server status including initialization state.
+    
+    This tool provides detailed information about:
+    - Server initialization status
+    - PyRAG instance state
+    - Available tools
+    - System resources
+    
+    Returns:
+        Dict with comprehensive server status
+    """
+    if ctx:
+        await ctx.info("Getting server status...")
+    
+    try:
+        import datetime
+        status = {
+            "status": "running",
+            "timestamp": datetime.datetime.utcnow().isoformat(),
+            "server_info": {},
+            "pyrag_status": {},
+            "tools": []
+        }
+        
+        # Server info
+        import sys
+        import os
+        status["server_info"] = {
+            "python_version": sys.version,
+            "working_directory": os.getcwd(),
+            "environment": os.environ.get("ENVIRONMENT", "unknown")
+        }
+        
+        # PyRAG status
+        try:
+            pyrag = get_pyrag()
+            status["pyrag_status"]["initialized"] = True
+            status["pyrag_status"]["instance_id"] = id(pyrag)
+            
+            # Check if PyRAG has required components
+            components = {}
+            for attr in ["storage_engine", "search_engine", "llm_client"]:
+                components[attr] = hasattr(pyrag, attr)
+            status["pyrag_status"]["components"] = components
+            
+        except Exception as e:
+            status["pyrag_status"]["initialized"] = False
+            status["pyrag_status"]["error"] = str(e)
+            status["status"] = "error"
+        
+        # Available tools
+        status["tools"] = [
+            "search_python_docs",
+            "search_python_docs_comprehensive", 
+            "search_python_docs_streaming",
+            "get_search_status",
+            "health_check",
+            "test_chromadb_connection",
+            "get_server_status"
+        ]
+        
+        if ctx:
+            await ctx.info(f"Server status: {status['status']}")
+        
+        return status
+        
+    except Exception as e:
+        logger.error(f"Server status check failed: {e}")
+        if ctx:
+            await ctx.error(f"Server status check failed: {e}")
+        return {
+            "status": "error",
+            "error": str(e),
+            "timestamp": "2024-01-01T00:00:00Z"
+        }
+
+logger.info("PyRAG MCP Server ready with 7 tools: search_python_docs, search_python_docs_comprehensive, search_python_docs_streaming, get_search_status, health_check, test_chromadb_connection, get_server_status")

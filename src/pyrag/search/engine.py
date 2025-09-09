@@ -102,11 +102,15 @@ class SimpleSearchEngine:
         max_results: int = 20,
     ) -> Dict[str, Any]:
         """Comprehensive search using multi-dimensional strategy for complex queries."""
-        self.logger.info(f"Comprehensive search for: {query}")
+        from ..logging import MultiDimensionalSearchLogger
+        
+        # Initialize search logger
+        search_logger = MultiDimensionalSearchLogger(query)
+        search_logger.log_query_start(library, max_results)
         
         # Step 1: Enhanced Query Analysis
         query_intent = await self._analyze_query_intent(query, library)
-        self.logger.info(f"Query intent: {query_intent}")
+        search_logger.log_intent_analysis(query_intent)
         
         # Step 2: Determine search strategy based on intent
         if query_intent.get("response_depth") == "comprehensive" or query_intent.get("is_multi_faceted", False):
@@ -140,6 +144,9 @@ class SimpleSearchEngine:
                 results = await self.coverage_engine.ensure_comprehensive_coverage(
                     results, query, query_intent, library
                 )
+            
+            # Log completion
+            search_logger.log_search_complete(len(results), multi_dim_result.coverage_score)
             
             return {
                 "results": results[:max_results],
