@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Optional
 from fastmcp import Context, FastMCP
 
 # Import streaming capabilities
-from .streaming import create_streaming_response
-from ..logging import (
+from pyrag.mcp.streaming import create_streaming_response
+from pyrag.logging import (
     log_mcp_request, 
     log_mcp_response, 
     CorrelationContext,
