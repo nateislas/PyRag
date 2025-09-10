@@ -612,7 +612,7 @@ Return ONLY a JSON array of strings: ["query1", "query2", "query3"]"""
         where_clause = {}
         
         if library:
-            where_clause["library_name"] = str(library)
+            where_clause["library"] = str(library)
 
         # If we have multiple conditions, use $and
         if len(where_clause) > 1:

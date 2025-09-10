@@ -448,7 +448,7 @@ class MultiDimensionalSearchEngine:
         
         try:
             # Build where clause for library filtering
-            where_clause = {"library_name": library} if library else None
+            where_clause = {"library": library} if library else None
             
             # Execute search for this dimension
             results = await self.vector_store.search(

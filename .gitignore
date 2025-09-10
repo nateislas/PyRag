@@ -152,7 +152,7 @@ venv.bak/
 cache/
 chroma_db/
 scripts/
-tools/pipeline/
+tools/pipeline/logs/
 tools/testing/
 trash/
 

@@ -66,8 +66,10 @@ class VectorStore:
 
     def _setup_collections(self):
         """Set up a single ChromaDB collection used for all content."""
+        config = get_config()
+        collection_name = config.vector_store.collection_name
         self.documents_collection = self.client.get_or_create_collection(
-            name="documents",
+            name=collection_name,
             metadata={"description": "Unified document collection for PyRAG"},
         )
 
